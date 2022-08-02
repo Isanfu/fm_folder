@@ -29,8 +29,8 @@ const baseUrl = (username)=>{
 }
 
 
-const name = baseUrl('sanfu')
-console.log(name);
+// const name = baseUrl('sanfu')
+// console.log(name);
 
 module.exports = {
    getIpAddress,

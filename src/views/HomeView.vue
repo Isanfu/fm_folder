@@ -142,10 +142,15 @@
     </div>
     <div id="header">
       <div style="float: left;margin-top: 15px">
-        <el-button-group>
-          <el-button size="small" icon="el-icon-arrow-left" round></el-button>
-          <el-button size="small" round><i class="el-icon-arrow-right el-icon--right"></i></el-button>
-        </el-button-group>
+        <el-breadcrumb separator-class="el-icon-arrow-right">
+
+           <el-breadcrumb-item v-for="item in items" :key="item.key">
+            <span v-if="item.key == 0" style="color:#303133;font-size:large;font-weight: bold; cursor:pointer;" @click="topBarOps(item.key)">{{item.name}}</span>
+            <span v-else style="color: #606266;font-size:medium; cursor:pointer" @click="topBarOps(item.key)">{{item.name}}</span>
+          </el-breadcrumb-item>
+
+         
+        </el-breadcrumb>
       </div>
       <div id="searchInput">
 
@@ -155,6 +160,20 @@
 
       <div id="notify">
         <el-button type="text" style="color: #0f62fe">消息</el-button>
+      </div>
+
+      <div id="avatar">
+        <el-dropdown>
+          <el-avatar :size="40" :src="require(`@/assets/${defaultAvatarImg}`)"></el-avatar>
+          <el-dropdown-menu slot="dropdown">
+            <el-dropdown-item style="font-weight: bolder;" divided disabled>当前用户：{{ username }} </el-dropdown-item>
+            <el-dropdown-item>修改用户名</el-dropdown-item>
+            <el-dropdown-item>修改密码</el-dropdown-item>
+            <el-dropdown-item>更改头像</el-dropdown-item>
+            <el-dropdown-item>退出</el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown>
+
       </div>
     </div>
     <div id="main">
@@ -177,6 +196,21 @@ export default {
     lanShare,
     myNotes
   },
+  data() {
+    return {
+      multipleSelection: [],
+      componentName: 'myNotes',
+      defaultAvatarImg: 'default-avatar.png'
+    };
+  },
+  computed: {
+    username() {
+      return this.$cookies.get('userInfo').username
+    },
+    items(){
+      return this.$root.$data.topBar
+    }
+  },
   mounted() {
 
     let aside_height = document.getElementById('aside')
@@ -194,6 +228,7 @@ export default {
       header.style.width = document.documentElement.clientWidth - 190 + 'px'
     })
 
+    const user = this.$cookies.get('userInfo')
     //文件拖拽
     main.addEventListener('drop', e => {
       e.stopPropagation(); // 防止浏览器打开新的标签页（firefox）
@@ -201,32 +236,29 @@ export default {
 
       const fileList = e.dataTransfer.files
 
-      const filePathArr  = []
+      const filePathArr = []
 
       for (const item of fileList) {
-        if(window.fileOps.isDir(item.path))
-          window.fileOps.saveDir(item.path)
+        console.log(item);
+        if (window.fileOps.isDir(item.path))
+          window.fileOps.saveDir(user, item.path)
         else
-          // window.fileOps.saveFile(item.path)
           filePathArr.push(item.path)
       }
-      window.fileOps.saveFile(filePathArr)
-
-
-
+      window.fileOps.saveFile(user, filePathArr)
     })
+
     main.addEventListener('dragover', (e) => {
       //必须要阻止拖拽的默认事件
       e.preventDefault();
       e.stopPropagation();
     })
+
+    const routerStack = []
+    routerStack.push('0')
+    this.$cookies.set('routerStack', routerStack)
   },
-  data() {
-    return {
-      multipleSelection: [],
-      componentName: 'myNotes'
-    };
-  },
+
   methods: {
     checked(id, num) {
       const btn = document.getElementById(id);
@@ -240,6 +272,17 @@ export default {
         tmp.style.color = "#303133";
       }
     },
+    topBarOps(itemId) {
+      // console.log(itemId);
+      const idx = this.$root.$data.topBar.map(o=>o.key).indexOf(itemId)
+      console.log(idx);
+      const num = this.$root.$data.topBar.length -1 - idx
+      console.log(this.$root.$data.topBar.length -1 - idx);
+
+      for(let i = 0; i< num;i++)
+        this.$root.$data.topBar.pop()
+      
+    }
   },
 };
 </script>
@@ -276,7 +319,8 @@ export default {
   margin-right: 30px;
 }
 
-#notify {
+#notify,
+#avatar {
   float: right;
   margin-top: 10px;
   margin-right: 30px;

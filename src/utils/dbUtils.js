@@ -8,8 +8,10 @@ const FlakeId = require('flake-idgen')
 const sqlite3 = require('sqlite3').verbose()
 
 
+
+
 //数据库名字位置
-const dbFile = './fileList.db'
+const dbFile = '/Users/sanfu/Desktop/file_share/fileList.db'
 
 const createDB = (callback) => {
    try {
@@ -37,14 +39,20 @@ const createDB = (callback) => {
             + 'absPath TEXT,'
             + 'relativePath TEXT,'
             + 'netPath TEXT,'
-            + 'modifyTime VARCHAR(100),'
-            + 'createTime VARCHAR(100),'
+            + 'modifyTime INT(20),'
+            + 'createTime INT(20),'
             + 'userId CHAR(20),'
             + 'ip CHAR(15),'
             + 'isDir INT(1),'
             + 'md5 VARCHAR(127));'
          //用户表创建sql语句
-         const createUserTable = 'CREATE TABLE user(id CHAR(20) PRIMARY KEY, username VARCHAR(32), password VARCHAR(32),ip CHAR(20));'
+         const createUserTable = 'CREATE TABLE user(id CHAR(20) PRIMARY KEY,'
+            + 'username VARCHAR(32), '
+            + 'password VARCHAR(32),'
+            + 'avatar VARCHAR(255),'
+            + 'ip CHAR(20),'
+            + 'modifyTime VARCHAR(100),'
+            + 'createTime VARCHAR(100));'
 
          db.serialize(() => {
 
@@ -92,32 +100,35 @@ const flakeIdGen = new FlakeId({ worker: parseInt(ipArr[2]) + parseInt(ipArr[3])
 
 
 //文件插入，手动开启事务优化插入速度
-const insertFileObjToDB=(fileObjArr)=>{
-   createDB(db=>{
-      db.serialize(()=>{
-         const userId = intformat(flakeIdGen.next(), 'dec')
-         const createTime =  Date.now()
+const insertFileObjToDB = (user,fileObjArr) => {
+   createDB(db => {
+      db.serialize(() => {
+         const createTime = Date.now()
          const modifyTime = createTime
          const ip = realIp
-         const baseUrl = netUtils.baseUrl('sanfu')  // 返回/user/c0a8299@sanfu/
-         
+         const baseUrl = netUtils.baseUrl(user.username)  // 返回/user/c0a8299@sanfu/
 
-         db.run('BEGIN TRANSACTION;',()=>{});
+
+         db.run('BEGIN TRANSACTION;', () => { });
          //id, parentId, filename, filetype, fileExtname, fileSize, absPath, 
          //relativePath, netPath, modifyTime, createTime, userId, ip, isDir, md5
-         const stmt = db.prepare("INSERT INTO local_files VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
-      
+         const stmt = db.prepare("INSERT INTO local_files VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);")
+
          fileObjArr.forEach(item => {
-            const netPath = item.relativePath.replace('./',baseUrl)
-            stmt.run(item.id,item.parentId,item.name,'doc',item.extname,item.size,item.absPath,
-                     item.relativePath,netPath,modifyTime,createTime,userId,ip,item.isDir,item.md5)
+            const netPath = item.relativePath.replace('./', baseUrl)
+            stmt.run(item.id, item.parentId, item.name, item.type, item.extname, item.size, item.absPath,
+               item.relativePath, netPath, modifyTime, createTime, user.id, ip, item.isDir, item.md5)
          });
          stmt.finalize()
          db.run('COMMIT')
-         
+
       })
+      db.close()
+
    })
 }
+
+
 // const fileA = [{
 //    id: '6958590011109388288',
 //    name: 'a0 3.txt',
@@ -134,6 +145,17 @@ const insertFileObjToDB=(fileObjArr)=>{
 
 
 
+
+// const user = {
+//    username: 'lm',
+//    password: '231231'
+// }
+
+// registerUser(user,(user)=>{
+//    console.log(user);
+// })
+
 module.exports = {
+   createDB,
    insertFileObjToDB
 }

@@ -3,19 +3,24 @@ import VueRouter from 'vue-router'
 // import HomeView from '../views/HomeView.vue'
 import LoginView from "@/views/LoginView";
 import HomeView from "@/views/HomeView";
+import LanLoginView from "@/views/LanLoginView"
 
 Vue.use(VueRouter)
 
 const routes = [
   {
-    path: '/home-view',
+    path: '/loginView',
     name: 'login',
     component: LoginView
   },
   {
-    path: '/',
+    path: '/homeView',
     name: "home",
     component: HomeView
+  },{
+    path: '/',
+    name: 'lanLogin',
+    component: LanLoginView
   }
   // {
   //   path: '/about',

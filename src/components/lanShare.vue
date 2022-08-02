@@ -51,30 +51,30 @@
         <el-table-column prop="fileName" label="文件名" width="550">
           <template slot-scope="scope">
 
-            <div slot="reference" class="name-wrapper" style="width: 100%" @mouseenter.native="showMenu(scope.row.id)">
+            <div slot="reference" class="name-wrapper" style="width: 100%" @mouseenter.middle="showMenu(scope.row.id)">
               <el-button type="text" size="medium" style="float: left;">
 
                 <span :class="scope.row.type + ' item-color'">&nbsp;&nbsp;{{ scope.row.fileName }}</span>
               </el-button>
               <!-- 表格行菜单显示-->
               <div :id="scope.row.id" style="float: right;visibility: hidden">
-                <el-tooltip content="移动" placement="bottom" open-delay="1000">
+                <el-tooltip content="移动" placement="bottom">
                   <el-button type="text" size="medium" style="float: left;">
                     <i class="el-icon-folder-opened"></i>
                   </el-button>
                 </el-tooltip>
-                <el-tooltip content="下载" placement="bottom" open-delay="1000">
+                <el-tooltip content="下载" placement="bottom">
                   <el-button type="text" size="medium" style="float: left;">
                     <i class="el-icon-download"></i>
                   </el-button>
                 </el-tooltip>
-                <el-tooltip content="分享" placement="bottom" open-delay="1000">
+                <el-tooltip content="分享" placement="bottom">
                   <el-button type="text" size="medium" style="float: left;">
                     <i class="el-icon-share"></i>
                   </el-button>
                 </el-tooltip>
                 <el-dropdown trigger="click" style="margin-left: 10px">
-                  <el-tooltip content="更多" placement="bottom" open-delay="1000">
+                  <el-tooltip content="更多" placement="bottom">
                     <el-button type="text" size="medium" style="float: left;">
                       <i class="el-icon-more"></i>
                     </el-button>

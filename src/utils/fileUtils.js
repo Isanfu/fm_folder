@@ -20,6 +20,62 @@ const getFileMd5 = (filePath, callback) => {
       callback(md5)
    });
 }
+
+const fileType = (extname) => {
+   extname = extname.replace('.','').toLowerCase() 
+
+   const video = ['avi', 'wmv', 'mpeg', 'mp4', 'm4v', 'mov', 'asf', 'flv', 'f4v', 'rmvb', 'rm', '3gp', 'vob']
+   const audio = ['mp3', 'wav', 'wma', 'mp2', 'flac', 'midi', 'ra', 'ape', 'aac', 'cda', 'mov']
+   const fileExtname = [
+      'apk', 'as','c', 'class', 'cmake', 'cpp','cs', 'css', 'dart', 'db','dmg','exe', 'fig',
+      'file', 'flash', 'folder', 'git', 'go', 'gradle', 'groovy','h', 'hpp', 'sh','rpm',
+      'html','jar', 'java', 'js', 'json','kt', 'less', 'log', 'm','mat', 'md', 'pas', 
+      'pdf','php', 'pl', 'plx', 'pp','proto', 'ps1', 'py','r', 'rs', 'ruby', 'sass',
+      'scpt', 'ts', 'uml','vue', 'xml', 'yaml','zip'
+   ]
+   const image = [ 'bmp','jpg','jpeg','png','tif','gif','pcx','tga','exif','fpx','svg','psd','cdr','pcd','dxf','ufo','eps','ai','raw','wmf','webp','avif','apng' ]
+   const word = ['doc', 'docx']
+   const excel = ['xls', 'xlsx']
+   const ppt = ['ppt', 'pptx']
+
+   for (const item of image) {
+      if(item == extname)
+         return 'image'
+   }
+   
+   for (const item of video) {
+      if(item == extname)
+         return 'video'
+   }
+   for (const item of audio) {
+      if(item == extname)
+         return 'audio'
+   }
+
+   for (const item of word) {
+      if(item == extname)
+         return 'word'
+   }
+   for (const item of excel) {
+      if(item == extname)
+         return 'excel'
+   }
+
+   for (const item of ppt) {
+      if(item == extname)
+         return 'ppt'
+   }
+
+   for (const item of fileExtname) {
+      if(item === extname){
+         return item
+      }
+   }
+
+   return 'document'
+}
+
+
 //判断路径是否为文件夹
 const isDir = (p) => {
    return fs.statSync(p).isDirectory()
@@ -45,6 +101,7 @@ const getFileObj = (filePathArr, callback) => {
             id: intformat(flakeIdGen.next(), 'dec'),
             name: filename,
             extname: path.extname(filePath),
+            type: fileType(path.extname(filePath)),
             absPath: fileUri,
             relativePath: './',
             parentId: '0',
@@ -72,13 +129,14 @@ const getDirObj = (p, callback) => {
    
    const parentPath = p.slice(0,p.length - baseUrlNames[baseUrlNames.length - 1].length)
 
-   //parentId == '0'，表示新上传文件夹，若存放在根路径则不变，根据路径id进行修改，
+   //parentId == '0',表示新上传文件夹,若存放在根路径则不变,根据路径id进行修改,
    fileArr.push({
       id: intformat(flakeIdGen.next(), 'dec'),
       name: baseUrlNames[baseUrlNames.length - 1],
-      extname: 0,
+      extname: 'folder',
+      type: 'folder',
       absPath: p,
-      relativePath: '/',   //插入数据库时，相对路径将会被替换为网络路径 即‘./’将会被替换为网盘根路径为/user/（‘hex’）ip@用户名
+      relativePath: '/',   //插入数据库时,相对路径将会被替换为网络路径 即‘./’将会被替换为网盘根路径为/user/（‘hex’）ip@用户名
       size: 0,
       isDir: 1,
       parentId: '0',
@@ -101,7 +159,8 @@ const getDirObj = (p, callback) => {
             fileArr.push({
                id: intformat(flakeIdGen.next(), 'dec'),
                name: item.name,
-               extname: 0,
+               extname: 'folder',
+               type: 'folder',
                absPath: currPath,
                relativePath: currPath.replace(parentPath, './'),
                size: 0,
@@ -115,6 +174,7 @@ const getDirObj = (p, callback) => {
                id: intformat(flakeIdGen.next(), 'dec'),
                name: item.name,
                extname: path.extname(item.name),
+               type: fileType(path.extname(item.name)),
                absPath: currPath,
                relativePath: currPath.replace(parentPath, './'),
                isDir: 0,
@@ -145,7 +205,7 @@ const getDirObj = (p, callback) => {
    // console.log(fileNum);
    // const t1 = Date.now()
    // const fdArr = []
-   //给数组中的文件对象添加md5属性，文件夹的md5值为0
+   //给数组中的文件对象添加md5属性,文件夹的md5值为0
    var count = 0
    for (const item of fileArr) {
 
