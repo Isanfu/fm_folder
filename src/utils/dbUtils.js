@@ -1,17 +1,13 @@
 const fs = require('fs');
-const crypto = require('crypto');
-const moment = require('moment')
 const netUtils = require('./netUtils')
-const path = require('path')
-const intformat = require('biguint-format')
-const FlakeId = require('flake-idgen')
 const sqlite3 = require('sqlite3').verbose()
-
-
+const userConfig = require('../config/userConfig')
+const path = require('path')
 
 
 //数据库名字位置
-const dbFile = '/Users/sanfu/Desktop/file_share/fileList.db'
+const dbFile = userConfig.fileListDbPath
+console.log(dbFile);
 
 const createDB = (callback) => {
    try {
@@ -26,7 +22,7 @@ const createDB = (callback) => {
    } catch (error) {
       const db = new sqlite3.Database(dbFile, err => {
          if (err) {
-            console.log('数据库错误');
+            console.log('aaaa');
             throw err
          }
          //文件表创建sql语句
@@ -51,8 +47,16 @@ const createDB = (callback) => {
             + 'password VARCHAR(32),'
             + 'avatar VARCHAR(255),'
             + 'ip CHAR(20),'
-            + 'modifyTime VARCHAR(100),'
-            + 'createTime VARCHAR(100));'
+            + 'modifyTime INT(20),'
+            + 'createTime INT(20));'
+         //分享表创建sql语句
+         const createShareFileListTable = 'CREATE TABLE file_share(id CHAR(20) PRIMARY KEY,'
+            + 'fileId CHAR(20),'
+            + 'userId CHAR(20),'
+            + 'createTime INT(20),'
+            + 'shareNum INT(6),'
+            + 'netPath TEXT,'
+            + 'isDir INT(1));'
 
          db.serialize(() => {
 
@@ -69,53 +73,38 @@ const createDB = (callback) => {
                      if (err) throw err
                      callback(db)
                   })
-
+                  db.run(createShareFileListTable, err => {
+                     if (err) throw err
+                     db.run('CREATE UNIQUE INDEX idx_fileId ON file_share(fileId);')
+                     callback(db)
+                  })
                } else
                   console.log('table existed');
 
                console.log(row['count(*)']);
             })
-            // const isExistUserTable = 'SELECT * FROM sqlite_master WHERE type="table" AND name = "user";'
-            // db.get(isExistUserTable, (err, row) => {
-            //    if (err) throw err
-            //    if (typeof (row) == 'undefined') {
-            //       db.run(createUserTable)
-            //    }
-            // })
+         
          })
       })
    }
 }
 
 
-
-// createDB(db => {
-//    const sql = "INSERT INTO user VALUES('22','das','asd','asdd')"
-//    db.run(sql)
-// })
-//使用ip后两段网址作为雪花id的workdId
-const realIp = netUtils.getIpAddress()
-const ipArr = realIp.split('.')
-const flakeIdGen = new FlakeId({ worker: parseInt(ipArr[2]) + parseInt(ipArr[3]) });
-
-
-//文件插入，手动开启事务优化插入速度
-const insertFileObjToDB = (user,fileObjArr) => {
+//文件插入
+const insertFileObjToDB = (user,fileObjArr,currUrl) => {
    createDB(db => {
       db.serialize(() => {
          const createTime = Date.now()
          const modifyTime = createTime
-         const ip = realIp
-         const baseUrl = netUtils.baseUrl(user.username)  // 返回/user/c0a8299@sanfu/
-
-
+         const ip = netUtils.getIpAddress().address
          db.run('BEGIN TRANSACTION;', () => { });
-         //id, parentId, filename, filetype, fileExtname, fileSize, absPath, 
-         //relativePath, netPath, modifyTime, createTime, userId, ip, isDir, md5
          const stmt = db.prepare("INSERT INTO local_files VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);")
 
          fileObjArr.forEach(item => {
-            const netPath = item.relativePath.replace('./', baseUrl)
+            //插入到当前路径
+            if(item.parentId == '0')
+                  item.parentId = currUrl.key
+            const netPath = item.relativePath.replace('.'+path.sep, currUrl.netPath)
             stmt.run(item.id, item.parentId, item.name, item.type, item.extname, item.size, item.absPath,
                item.relativePath, netPath, modifyTime, createTime, user.id, ip, item.isDir, item.md5)
          });
@@ -128,32 +117,6 @@ const insertFileObjToDB = (user,fileObjArr) => {
    })
 }
 
-
-// const fileA = [{
-//    id: '6958590011109388288',
-//    name: 'a0 3.txt',
-//    extname: '.txt',
-//    absPath: '/Users/sanfu/Downloads/d1',
-//    relativePath: './d1',
-//    isDir: 0,
-//    parentId: '6958590011105193984',
-//    md5: 'c469e705e31a5cc67d2204fdc5634a2f',
-//    size: 15
-//  }]
-
-//  insertFileObjToDB(fileA)
-
-
-
-
-// const user = {
-//    username: 'lm',
-//    password: '231231'
-// }
-
-// registerUser(user,(user)=>{
-//    console.log(user);
-// })
 
 module.exports = {
    createDB,

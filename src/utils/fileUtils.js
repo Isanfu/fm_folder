@@ -2,10 +2,9 @@ const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path')
 const netUtils = require('./netUtils')
-const moment = require('moment');
 const intformat = require('biguint-format')
 const FlakeId = require('flake-idgen')
-const md5File = require('md5-file')
+
 
 //获取文件的md5值
 const getFileMd5 = (filePath, callback) => {
@@ -22,52 +21,52 @@ const getFileMd5 = (filePath, callback) => {
 }
 
 const fileType = (extname) => {
-   extname = extname.replace('.','').toLowerCase() 
+   extname = extname.replace('.', '').toLowerCase()
 
    const video = ['avi', 'wmv', 'mpeg', 'mp4', 'm4v', 'mov', 'asf', 'flv', 'f4v', 'rmvb', 'rm', '3gp', 'vob']
    const audio = ['mp3', 'wav', 'wma', 'mp2', 'flac', 'midi', 'ra', 'ape', 'aac', 'cda', 'mov']
    const fileExtname = [
-      'apk', 'as','c', 'class', 'cmake', 'cpp','cs', 'css', 'dart', 'db','dmg','exe', 'fig',
-      'file', 'flash', 'folder', 'git', 'go', 'gradle', 'groovy','h', 'hpp', 'sh','rpm',
-      'html','jar', 'java', 'js', 'json','kt', 'less', 'log', 'm','mat', 'md', 'pas', 
-      'pdf','php', 'pl', 'plx', 'pp','proto', 'ps1', 'py','r', 'rs', 'ruby', 'sass',
-      'scpt', 'ts', 'uml','vue', 'xml', 'yaml','zip'
+      'apk', 'as', 'c', 'class', 'cmake', 'cpp', 'cs', 'css', 'dart', 'db', 'dmg', 'exe', 'fig',
+      'file', 'flash', 'folder', 'git', 'go', 'gradle', 'groovy', 'h', 'hpp', 'sh', 'rpm',
+      'html', 'jar', 'java', 'js', 'json', 'kt', 'less', 'log', 'm', 'mat', 'md', 'pas',
+      'pdf', 'php', 'pl', 'plx', 'pp', 'proto', 'ps1', 'py', 'r', 'rs', 'ruby', 'sass',
+      'scpt', 'ts', 'uml', 'vue', 'xml', 'yaml', 'zip'
    ]
-   const image = [ 'bmp','jpg','jpeg','png','tif','gif','pcx','tga','exif','fpx','svg','psd','cdr','pcd','dxf','ufo','eps','ai','raw','wmf','webp','avif','apng' ]
+   const image = ['bmp', 'jpg', 'jpeg', 'png', 'tif', 'gif', 'pcx', 'tga', 'exif', 'fpx', 'svg', 'psd', 'cdr', 'pcd', 'dxf', 'ufo', 'eps', 'ai', 'raw', 'wmf', 'webp', 'avif', 'apng']
    const word = ['doc', 'docx']
    const excel = ['xls', 'xlsx']
    const ppt = ['ppt', 'pptx']
 
    for (const item of image) {
-      if(item == extname)
+      if (item == extname)
          return 'image'
    }
-   
+
    for (const item of video) {
-      if(item == extname)
+      if (item == extname)
          return 'video'
    }
    for (const item of audio) {
-      if(item == extname)
+      if (item == extname)
          return 'audio'
    }
 
    for (const item of word) {
-      if(item == extname)
+      if (item == extname)
          return 'word'
    }
    for (const item of excel) {
-      if(item == extname)
+      if (item == extname)
          return 'excel'
    }
 
    for (const item of ppt) {
-      if(item == extname)
+      if (item == extname)
          return 'ppt'
    }
 
    for (const item of fileExtname) {
-      if(item === extname){
+      if (item === extname) {
          return item
       }
    }
@@ -79,11 +78,21 @@ const fileType = (extname) => {
 //判断路径是否为文件夹
 const isDir = (p) => {
    return fs.statSync(p).isDirectory()
+
 }
 
+//获取文件后缀名
+const getExtname = (filename) => {
+   return path.extname(filename)
+}
+
+//获取文件大小
+const getFstat = (path)=>{
+   return fs.statSync(path)
+}
 
 //使用ip后两段网址作为雪花id的workdId
-const realIp = netUtils.getIpAddress()
+const realIp = netUtils.getIpAddress().address
 const ipArr = realIp.split('.')
 const flakeIdGen = new FlakeId({ worker: parseInt(ipArr[2]) + parseInt(ipArr[3]) });
 
@@ -97,37 +106,46 @@ const getFileObj = (filePathArr, callback) => {
       getFileMd5(filePath, md5 => {
          count++
          const fstat = fs.statSync(filePath)
-         fileObjArr.push ({
+         fileObjArr.push({
             id: intformat(flakeIdGen.next(), 'dec'),
             name: filename,
             extname: path.extname(filePath),
             type: fileType(path.extname(filePath)),
             absPath: fileUri,
-            relativePath: './',
+            relativePath: '.' + path.sep,
             parentId: '0',
             isDir: 0,
             md5: md5,
             size: fstat.size
          })
-         if(count == filePathArr.length)
+         if (count == filePathArr.length)
             callback(fileObjArr)
       })
    });
-  
+
 }
 
-//BFS遍历目录
+//根据路径获取文件名
+const getFileObjName = (p) => {
+   if (isDir(p)) {
+      const baseUrlNames = p.split(path.sep)
+      return baseUrlNames[baseUrlNames.length - 1]
+   } else
+      return path.basename(p)
+
+}
+//层次遍历目录
 const getDirObj = (p, callback) => {
    const fileArr = []   //文件对象数组
    const dirQueue = []  //路径队列
    var fileNum = 0  //文件计数
-   
+
 
    //路径放入队列
    dirQueue.push(p)
    const baseUrlNames = p.split(path.sep)
-   
-   const parentPath = p.slice(0,p.length - baseUrlNames[baseUrlNames.length - 1].length)
+   //路径文件夹名
+   const parentPath = p.slice(0, p.length - baseUrlNames[baseUrlNames.length - 1].length)
 
    //parentId == '0',表示新上传文件夹,若存放在根路径则不变,根据路径id进行修改,
    fileArr.push({
@@ -135,8 +153,8 @@ const getDirObj = (p, callback) => {
       name: baseUrlNames[baseUrlNames.length - 1],
       extname: 'folder',
       type: 'folder',
-      absPath: p,
-      relativePath: '/',   //插入数据库时,相对路径将会被替换为网络路径 即‘./’将会被替换为网盘根路径为/user/（‘hex’）ip@用户名
+      absPath: p,            //'./'代表根目录
+      relativePath: '.' + path.sep,   //插入数据库时,相对路径将会被替换为网络路径 即‘./’将会被替换为网盘根路径为/user/（‘hex’）ip@用户名
       size: 0,
       isDir: 1,
       parentId: '0',
@@ -151,8 +169,6 @@ const getDirObj = (p, callback) => {
 
          if (item.name == '.DS_Store')
             continue
-
-
          if (item.isDirectory()) {
             let dirAbsPath = path.join(currPath, item.name)
             dirQueue.push(dirAbsPath)
@@ -162,11 +178,10 @@ const getDirObj = (p, callback) => {
                extname: 'folder',
                type: 'folder',
                absPath: currPath,
-               relativePath: currPath.replace(parentPath, './'),
+               relativePath: currPath.replace(parentPath, '.' + path.sep),
                size: 0,
                isDir: 1,
             })
-
          } else {
             fileNum++
             //当前目录下的文件
@@ -176,7 +191,7 @@ const getDirObj = (p, callback) => {
                extname: path.extname(item.name),
                type: fileType(path.extname(item.name)),
                absPath: currPath,
-               relativePath: currPath.replace(parentPath, './'),
+               relativePath: currPath.replace(parentPath, '.' + path.sep),
                isDir: 0,
             })
 
@@ -192,7 +207,6 @@ const getDirObj = (p, callback) => {
          }
       }
    }
-
    //第一层路径添加parentId
    for (const item of fileArr) {
       if (item.absPath == p)
@@ -200,7 +214,7 @@ const getDirObj = (p, callback) => {
    }
    fileArr[0].parentId = '0'
 
-   console.log('parentPAth：'+parentPath);
+   // console.log('parentPAth：'+parentPath);
    //文件数量
    // console.log(fileNum);
    // const t1 = Date.now()
@@ -213,32 +227,7 @@ const getDirObj = (p, callback) => {
          getFileMd5(`${item.absPath}/${item.name}`, md5 => {
             item.md5 = md5
             count++
-            //异步处理
-            // fs.open(`${item.absPath}/${item.name}`, (err, fd) => {
-            //    if (err) throw err
-            //    count++
-            //    fs.fstat(fd, (err, fstat) => {
-            //       if (err) throw err
-            //       item.size = fstat.size
-
-            //       fs.close(fd,()=>{})
-
-            //       //TODO 性能优化
-            //       // fdArr.push(fd)
-            //       // if(fdArr.length>200){
-            //       //    fdArr.forEach(fdItem=>{
-            //       //       fs.close(fdItem)
-            //       //    })
-            //       //    fdArr.splice(0,fdArr.length)
-            //       // }
-            //    })
-            //     //当回调执行次数等于文件数量时回调文件数组
-            //    if (count == fileNum) {
-            //       console.log(Date.now()-t1);
-            //       callback(fileArr)
-            //    }
-            // })
-            fstat = fs.statSync(`${item.absPath}/${item.name}`)
+            const fstat = fs.statSync(`${item.absPath}/${item.name}`)
             item.size = fstat.size
             if (count == fileNum) {
                // console.log(Date.now()-t1);
@@ -247,6 +236,9 @@ const getDirObj = (p, callback) => {
 
          })
 
+      } else if (fileNum == 0) {
+         item.md5 = '0'
+         callback(fileArr)
       } else {
          item.md5 = '0'
       }
@@ -255,6 +247,25 @@ const getDirObj = (p, callback) => {
 
 }
 
+const t1 = Date.now()
+getDirObj('/Users/sanfu/Downloads/test',data=>{
+   console.log(data.length);
+   console.log(Date.now()-t1);
+})
+
+//记录正在下载的任务
+const recordDownloadingFile = (val)=>{
+   fs.writeFileSync('src/file_broadcast/recordAwaitDownloadQueue.json',JSON.stringify(val))
+}
+
+//读取正在下载的任务
+const getDownloadingObj = () => {
+   return fs.readFileSync('src/file_broadcast/recordAwaitDownloadQueue.json').toLocaleString()
+}
+//读取下载已完成的任务
+const getDownloadedQueue = ()=>{
+   return fs.readFileSync('src/file_broadcast/recordDownloadedFile.json').toLocaleString()
+}
 
 // const p = '/Users/sanfu/Downloads/d1'
 // getDirObj(p,fileArr=>{
@@ -281,13 +292,16 @@ const getDirObj = (p, callback) => {
 // console.log(hash);
 // console.log(Date.now()-t1);
 
-
-
-
 module.exports = {
+   getExtname,
    getDirObj,
    getFileMd5,
    getFileObj,
+   getFstat,
+   getFileObjName,
+   recordDownloadingFile,
+   getDownloadingObj,
+   getDownloadedQueue,
    isDir
 }
 

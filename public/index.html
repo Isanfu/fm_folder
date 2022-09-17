@@ -7,7 +7,7 @@
     <link rel="icon" href="<%= BASE_URL %>favicon.ico">
     <title><%= htmlWebpackPlugin.options.title %></title>
   </head>
-  <body>
+  <body onselectstart="return false">
     <noscript>
       <strong>无法继续工作，请启用javascript！</strong>
     </noscript>
@@ -19,7 +19,8 @@
           margin: 0px;
           padding: 0px;
           font-family: BlinkMacSystemFont,Helvetica Neue,PingFang SC,Microsoft YaHei,Source Han Sans SC,Noto Sans CJK SC,WenQuanYi Micro Hei,sans-serif;
-          -webkit-app-region: drag;
+          overflow: hidden;
+         
       }
   </style>
 

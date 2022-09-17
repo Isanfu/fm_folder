@@ -1,8 +1,9 @@
 <template>
    <div id="body">
+        <div style="height: 25px;width: 100%;background-color: #f4f4f7; -webkit-app-region: drag;"></div>
       <div id="login">
          <el-tabs v-model="activeName">
-            <el-tab-pane label="设置用户" name="first">
+            <el-tab-pane label="用户" name="first">
                <el-form :model="registerFormData">
 
                   <el-form-item prop="username">
@@ -16,15 +17,14 @@
                         show-password clearable>
                      </el-input>
                   </el-form-item>
-
-
+               
                   <el-button v-if="!btnFlag" type="primary" @click="submitRegisterForm(registerFormData)"
                      style="margin-top: 71px;width: 100%">
                      注册
                   </el-button>
                   <el-button v-if="btnFlag" type="primary" @click="submitSignInForm(registerFormData)"
                      style="margin-top: 71px;width: 100%">
-                     登陆
+                     登录
                   </el-button>
                </el-form>
             </el-tab-pane>
@@ -38,18 +38,17 @@
 export default {
    name: "LanLoginView",
    mounted() {
+   
       let body = document.getElementById('body')
       body.style.height = document.documentElement.clientHeight + 'px'
       this.formMarginTop('username')
       this.formMarginTop('password')
 
       window.userOps.isExistUser(data => {
-         console.log(data);
          if (data['count(*)'] != 0)
             this.btnFlag = true
+            
       })
-
-
    },
    data() {
       return {
@@ -72,19 +71,20 @@ export default {
          el.style.borderRadius = '0px'
          el.style.padding = '0px'
       },
+      //提交注册表单
       submitRegisterForm(registerFormData) {
 
          window.userOps.isRegisterUser(registerFormData.username, i => {
             if (i) {
                this.$message.error('用户已存在!')
             } else {
-               console.log(registerFormData);
                let user = {
                   username: registerFormData.username,
                   password: window.userOps.md5ForPassword(registerFormData.password)
                }
-               window.userOps.registerUser(user, res => {
-                  this.$cookies.set('userInfo', res)
+               window.userOps.registerUser(user, data => {
+                  this.$cookies.set('userInfo', data,{ expires: 7})
+                  window.userOps.notifyUserOnlineToLan()
                   this.$router.push('/homeView')
                })
             }
@@ -92,24 +92,23 @@ export default {
          })
 
       },
+      //提交登录表单
       submitSignInForm(registerFormData) {
+         const user = this.$cookies.get('userInfo')
+            console.log(user);
          const md5Password = window.userOps.md5ForPassword(registerFormData.password)
          window.userOps.signInUser(registerFormData.username,data=>{
-            if(data.password === md5Password){
-               console.log(data);
-               this.$cookies.set('userInfo',data)
+            
+            if(data != undefined && data.password === md5Password){
+               this.$cookies.set('userInfo',data,{ expires: 7})
+               window.userOps.notifyUserOnlineToLan()
                this.$router.push('/homeView')
             }
                
             else
-               this.$message.error('密码错误')
+               this.$message.error('用户名或密码错误')
          })
-         console.log(registerFormData);
       }
-
-      //   toHome(){
-      //     this.$router.push('/home-view')
-      //   }
    }
 
 }
@@ -119,15 +118,16 @@ export default {
 #body {
    margin: 0;
    padding: 0;
-   display: flex;
+   background-color: #f4f4f7;
 }
 
 #login {
-   width: 350px;
+   width: 320px;
    height: 450px;
    margin: 0 auto;
    align-self: center;
    background: #ffffff;
+   transform: translateY(100px);
    padding: 20px;
 }
 </style>

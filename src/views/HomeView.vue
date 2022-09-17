@@ -1,5 +1,6 @@
 <template>
   <div id="body">
+    <div style="height: 25px;width: 100%;background-color: #f4f4f7; -webkit-app-region: drag;"></div>
     <div id="aside">
       <div id="asideTop">
         <div id="asideIcon">
@@ -10,151 +11,79 @@
           </svg>
         </div>
 
-        <div style="margin-top: 10px">
+        <div id="asideBtnGroup" style="margin-top: 10px">
           <span type="text" class="asideGroupName">文件</span>
           <div>
-            <el-button @click="checked('btn1', '1')" id="btn1" icon="el-icon-folder" type="text" style="
-              background-color: #fff;
-              width: 130px;
-              float: left;
-              margin-top: 5px;
-              text-align: left;
-              padding: 10px;
-              color: #0f62fe;
-            ">全部文件
+            <el-button @click="checked('btn1', 'myFile')" id="btn1" icon="el-icon-folder" type="text">我的文件
             </el-button>
-          </div>
-          <div>
-            <el-button @click="checked('btn2', '2')" id="btn2" icon="el-icon-edit" type="text" style="
-              width: 130px;
-              float: left;
-              margin-top: 5px;
-              text-align: left;
-              padding: 10px;
-              color: #303133;
-            ">我的笔记
-            </el-button>
-          </div>
-          <div>
-            <el-button @click="checked('btn3', '3')" id="btn3" icon="el-icon-box" type="text" style="
-              width: 130px;
-              float: left;
-              margin-top: 5px;
-              text-align: left;
-              padding: 10px;
-              color: #303133;">局域网文件</el-button>
           </div>
 
           <div>
-            <el-button @click="checked('btn4', '4')" id="btn4" icon="el-icon-video-camera" type="text" style="
-                width: 130px;
-                float: left;
-                margin-top: 5px;
-                text-align: left;
-                padding: 10px;
-                color: #303133;">视频</el-button>
-          </div>
-          <div>
-            <el-button @click="checked('btn5', '5')" id="btn5" icon="el-icon-headset" type="text" style="
-              width: 130px;
-              float: left;
-              margin-top: 5px;
-              text-align: left;
-              padding: 10px;
-              color: #303133;
-            ">音频
+            <el-button @click="checked('btn2', 'myShare')" id="btn2" icon="el-icon-position" type="text">我的分享
             </el-button>
           </div>
           <div>
-            <el-button @click="checked('btn11', '11')" id="btn11" icon="el-icon-picture-outline" type="text" style="
-              width: 130px;
-              float: left;
-              margin-top: 5px;
-              text-align: left;
-              padding: 10px;
-              color: #303133;
-            ">图片
+            <el-button @click="checked('btn3', 'lanFile')" id="btn3" icon="el-icon-box" type="text">局域网文件</el-button>
+          </div>
+
+          <div>
+            <el-button @click="checked('btn4', 'video')" id="btn4" icon="el-icon-video-camera" type="text">视频
             </el-button>
           </div>
           <div>
-            <el-button @click="checked('btn6', '6')" id="btn6" icon="el-icon-document" type="text" style="
-              width: 130px;
-              float: left;
-              margin-top: 5px;
-              text-align: left;
-              padding: 10px;
-              color: #303133;
-            ">文档
+            <el-button @click="checked('btn5', 'audio')" id="btn5" icon="el-icon-headset" type="text">音频
             </el-button>
           </div>
           <div>
-            <el-button @click="checked('btn7', '7')" id="btn7" icon="el-icon-position" type="text" style="
-              width: 130px;
-              float: left;
-              margin-top: 5px;
-              text-align: left;
-              padding: 10px;
-              color: #303133;
-            ">我的分享
+            <el-button @click="checked('btn6', 'image')" id="btn6" icon="el-icon-picture-outline" type="text">图片
             </el-button>
           </div>
+          <div>
+            <el-button @click="checked('btn7', 'document')" id="btn7" icon="el-icon-document" type="text">文档
+            </el-button>
+          </div>
+
           <div>
             <span type="text" class="asideGroupName">传输</span>
 
           </div>
           <div>
-            <el-button @click="checked('btn8', '8')" id="btn8" icon="el-icon-upload2" type="text" style="
-              width: 130px;
-              float: left;
-              margin-top: 5px;
-              text-align: left;
-              padding: 10px;
-              color: #303133;
-            ">正在上传
+
+            <el-button @click="checked('btn8', 'downloadingFile')" id="btn8" icon="el-icon-download" type="text">
+              <el-badge :value="awaitQueueLen == 0?'':awaitQueueLen" class="item">
+                <div style="width: 63px;">正在下载</div>
+              </el-badge>
             </el-button>
+
           </div>
           <div>
-            <el-button @click="checked('btn9', '9')" id="btn9" icon="el-icon-download" type="text" style="
-              width: 130px;
-              float: left;
-              margin-top: 5px;
-              text-align: left;
-              padding: 10px;
-              color: #303133;
-            ">正在下载
+
+            <el-button @click="checked('btn9', 'downloadedFile')" id="btn9" icon="el-icon-circle-check" type="text">
+              <el-badge :value="downloadedLen == 0?'':downloadedLen" class="item">
+                <div style="width: 63px;">下载完成</div>
+              </el-badge>
+
             </el-button>
-          </div>
-          <div>
-            <el-badge :value="12" class="item">
-              <el-button @click="checked('btn10', '10')" id="btn10" icon="el-icon-circle-check" type="text" style="
-                width: 130px;
-                float: left;
-                margin-top: 5px;
-                text-align: left;
-                padding: 10px;
-                color: #303133;
-              ">下载历史
-              </el-button>
-            </el-badge>
+
           </div>
         </div>
       </div>
     </div>
     <div id="header">
-      <div style="float: left;margin-top: 15px">
-        <el-breadcrumb separator-class="el-icon-arrow-right">
 
-           <el-breadcrumb-item v-for="item in items" :key="item.key">
-            <span v-if="item.key == 0" style="color:#303133;font-size:large;font-weight: bold; cursor:pointer;" @click="topBarOps(item.key)">{{item.name}}</span>
-            <span v-else style="color: #606266;font-size:medium; cursor:pointer" @click="topBarOps(item.key)">{{item.name}}</span>
-          </el-breadcrumb-item>
+      <div id="topBar">
 
-         
-        </el-breadcrumb>
+        <span v-for="item in items" :key="item.key" style="font-size:medium; cursor:pointer;color: black;"
+          @click="topBarOps(item.key)">
+          <i v-if="item.key != '0'" class="el-icon-arrow-right" /> {{ item.name }}
+        </span>
+
+
       </div>
       <div id="searchInput">
 
-        <el-input placeholder="搜索全部文件" prefix-icon="el-icon-search" style="width: 250px">
+        <el-input v-model="searchKey" placeholder="搜索全部文件" @keyup.enter.native="searchData"
+          prefix-icon="el-icon-search">
         </el-input>
       </div>
 
@@ -163,21 +92,34 @@
       </div>
 
       <div id="avatar">
-        <el-dropdown>
-          <el-avatar :size="40" :src="require(`@/assets/${defaultAvatarImg}`)"></el-avatar>
+        <el-dropdown @command="updateUser">
+          <el-avatar :size="40"
+            :src="defaultAvatarImg == '' ? require(`@/assets/default_avatar.png`) : require(`@/assets/${defaultAvatarImg}`)">
+          </el-avatar>
           <el-dropdown-menu slot="dropdown">
-            <el-dropdown-item style="font-weight: bolder;" divided disabled>当前用户：{{ username }} </el-dropdown-item>
-            <el-dropdown-item>修改用户名</el-dropdown-item>
-            <el-dropdown-item>修改密码</el-dropdown-item>
-            <el-dropdown-item>更改头像</el-dropdown-item>
-            <el-dropdown-item>退出</el-dropdown-item>
+            <el-dropdown-item style="font-weight: bolder;" disabled>当前用户：{{ username }} </el-dropdown-item>
+            <el-dropdown-item command="username" divided>修改用户名</el-dropdown-item>
+
+            <el-dropdown-item command="password">修改密码</el-dropdown-item>
+            <el-dropdown-item command="avatar">更改头像</el-dropdown-item>
+            <el-dropdown-item command="userExit">退出</el-dropdown-item>
           </el-dropdown-menu>
         </el-dropdown>
 
       </div>
     </div>
+    <el-dialog title="修改密码" :visible.sync="passwordDialogVisible" width="30%">
+      <el-input v-model="oldPassword" autocomplete="off" placeholder="请输入旧密码"></el-input>
+
+      <el-input style="margin-top: 20px" v-model="newPassword" autocomplete="off" placeholder="请输入新密码"></el-input>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="passwordDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="updatePassword">确 定</el-button>
+      </span>
+    </el-dialog>
+
     <div id="main">
-      <component :is="componentName"></component>
+      <component :is="componentName" :type="fileType" :searchKey="serarchMsg"></component>
     </div>
 
   </div>
@@ -185,109 +127,164 @@
 
 <script>
 
-import lanShare from "@/components/lanShare";
-import myNotes from "@/components/myNotes";
-
-
-
+import classifyFile from "@/components/classifyFile.vue";
+import myFile from "@/components/myFile";
+import myShare from "@/components/myShare.vue";
+import lanFile from "@/components/lanFile.vue";
+import downloadingFile from "@/components/downloadingFile.vue";
+import downloadedFile from "@/components/downloadedFile.vue";
 export default {
   name: 'HomeView',
   components: {
-    lanShare,
-    myNotes
+    myFile,
+    classifyFile,
+    myShare,
+    lanFile,
+    downloadingFile,
+    downloadedFile
   },
   data() {
     return {
-      multipleSelection: [],
-      componentName: 'myNotes',
-      defaultAvatarImg: 'default-avatar.png'
+      componentName: 'myFile',
+      defaultAvatarImg: '',
+      fileType: '',
+      passwordDialogVisible: false,
+      oldPassword: '',
+      newPassword: '',
+      searchKey: '',
+      serarchMsg: '',
+      downloadedLen: 0
     };
   },
   computed: {
     username() {
       return this.$cookies.get('userInfo').username
     },
-    items(){
+    items() {
       return this.$root.$data.topBar
-    }
+    },
+    awaitQueueLen() {
+      return this.$root.$data.awaitDownloadQueue.length
+    },
   },
   mounted() {
-
     let aside_height = document.getElementById('aside')
     let main = document.getElementById('main')
     let header = document.getElementById('header')
-    aside_height.style.height = document.documentElement.clientHeight + 'px'
+    let topBar = document.getElementById('topBar')
+    let myFile = document.getElementById('btn1')
+
+    myFile.style.background = '#fff'
+    myFile.style.color = '#0F62FE'
+
+    aside_height.style.height = document.documentElement.clientHeight - 25 + 'px'
     main.style.height = document.documentElement.clientHeight - 86 + 'px'
     main.style.width = document.documentElement.clientWidth - 190 + 'px'
     header.style.width = document.documentElement.clientWidth - 190 + 'px'
-
+    topBar.style.width = (document.documentElement.clientWidth - 190) * 0.4 + 'px'
     window.addEventListener('resize', () => {
-      aside_height.style.height = document.documentElement.clientHeight + 'px'
+      aside_height.style.height = document.documentElement.clientHeight - 25 + 'px'
       main.style.height = document.documentElement.clientHeight - 86 + 'px'
       main.style.width = document.documentElement.clientWidth - 190 + 'px'
       header.style.width = document.documentElement.clientWidth - 190 + 'px'
+      topBar.style.width = (document.documentElement.clientWidth - 190) * 0.4 + 'px'
     })
 
     const user = this.$cookies.get('userInfo')
-    //文件拖拽
-    main.addEventListener('drop', e => {
-      e.stopPropagation(); // 防止浏览器打开新的标签页（firefox）
-      e.preventDefault(); // 阻止拖放后的浏览器默认行为
-
-      const fileList = e.dataTransfer.files
-
-      const filePathArr = []
-
-      for (const item of fileList) {
-        console.log(item);
-        if (window.fileOps.isDir(item.path))
-          window.fileOps.saveDir(user, item.path)
-        else
-          filePathArr.push(item.path)
-      }
-      window.fileOps.saveFile(user, filePathArr)
-    })
-
-    main.addEventListener('dragover', (e) => {
-      //必须要阻止拖拽的默认事件
-      e.preventDefault();
-      e.stopPropagation();
-    })
-
-    const routerStack = []
-    routerStack.push('0')
-    this.$cookies.set('routerStack', routerStack)
+    if (user.avatar != 'default_avatar.png')
+      this.defaultAvatarImg = user.avatar
   },
 
   methods: {
-    checked(id, num) {
+    checked(id, args) {
+
       const btn = document.getElementById(id);
       btn.style.color = "#0F62FE";
       btn.style.backgroundColor = "#fff";
 
-      for (let i = 1; i <= 11; i++) {
-        if (i == num) continue;
-        const tmp = document.getElementById("btn" + i);
-        tmp.style.background = "#F4F4F7";
-        tmp.style.color = "#303133";
+      for (let i = 1; i <= 9; i++) {
+        if ('btn' + i != id) {
+          const tmpBtn = document.getElementById('btn' + i);
+          tmpBtn.style.background = '#F4F4F7'
+          tmpBtn.style.color = 'black'
+        }
       }
+      if (id == 'btn1' || id == 'btn2' || id == 'btn3' || id == 'btn8'|| id == 'btn9') {
+        this.componentName = args
+      } else {
+        this.componentName = 'classifyFile'
+        this.fileType = args
+      }
+      if(id == 'btn9')
+        this.downloadedLen = 0
+    },
+    updatePassword() {
+      const user = this.$cookies.get('userInfo')
+      if (window.userOps.md5ForPassword(this.oldPassword) != user.password) {
+        this.$message.error('密码错误！');
+      } else {
+        window.userOps.updateUser('password', user.id, window.userOps.md5ForPassword(this.newPassword), data => {
+          console.log(data);
+          user['password'] = window.userOps.md5ForPassword(this.newPassword)
+          this.$cookies.set('userInfo', user, { expires: 7 })
+        })
+      }
+    },
+    searchData() {
+      this.componentName = 'myFile'
+      this.serarchMsg = this.searchKey
     },
     topBarOps(itemId) {
       // console.log(itemId);
-      const idx = this.$root.$data.topBar.map(o=>o.key).indexOf(itemId)
+      const idx = this.$root.$data.topBar.map(o => o.key).indexOf(itemId)
       console.log(idx);
-      const num = this.$root.$data.topBar.length -1 - idx
-      console.log(this.$root.$data.topBar.length -1 - idx);
+      const num = this.$root.$data.topBar.length - 1 - idx
+      console.log(this.$root.$data.topBar.length - 1 - idx);
 
-      for(let i = 0; i< num;i++)
+      for (let i = 0; i < num; i++)
         this.$root.$data.topBar.pop()
-      
-    }
+
+    },
+    updateUser(command) {
+      const user = this.$cookies.get('userInfo')
+      let prompt = ''
+      switch (command) {
+        case 'username': prompt = '输入新用户名'; break;
+        case 'password': prompt = '输入密码'; break;
+        case 'avatar': window.userOps.updateUser('avatar', user.id); return;
+      }
+
+      if (command == 'password') {
+        this.passwordDialogVisible = true
+        return
+      }
+
+      if (command == 'userExit') {
+        this.$cookies.set('userInfo', '')
+        this.$router.push('/')
+        return
+      }
+
+      this.$prompt(prompt, '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        inputPattern: /^[^/\\:*?"<>|\\]{1,255}$/,
+        inputErrorMessage: '不符合规则'
+      }).then((newVal) => {
+        window.userOps.updateUser(command, user.id, newVal.value, data => {
+          console.log(data);
+          user[command] = newVal.value
+          this.$cookies.set('userInfo', user, { expires: 7 })
+        })
+      }).catch(() => {
+        console.log('取消');
+      })
+    },
   },
 };
 </script>
 
-<style>
+<style scoped>
 #aside {
   width: 150px;
   background-color: #f4f4f7;
@@ -305,24 +302,19 @@ export default {
 }
 
 #header {
-  padding-top: 16px;
+
   width: 100%;
   height: 70px;
   background-color: #f4f4f7;
   position: absolute;
   left: 190px;
+  min-width: 0
 }
 
-#searchInput {
-  float: right;
-  margin-top: 10px;
-  margin-right: 30px;
-}
-
+#searchInput,
 #notify,
 #avatar {
   float: right;
-  margin-top: 10px;
   margin-right: 30px;
 }
 
@@ -332,7 +324,6 @@ export default {
   position: absolute;
   left: 190px;
   top: 85px;
-  overflow: scroll;
 }
 
 .asideGroupName {
@@ -346,12 +337,33 @@ export default {
   font-weight: 500;
 }
 
-.demo {
+#topBar {
+  float: left;
+  margin-top: 5px;
+  height: 25px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+}
+
+
+#asideBtnGroup :deep().el-button {
+  background-color: #F4F4F7;
   width: 130px;
   float: left;
   margin-top: 5px;
   text-align: left;
   padding: 10px;
-  color: #303133;
+}
+
+#asideBtnGroup :deep().el-button--text {
+  color: black;
+  font-size: small;
+}
+
+#asideBtnGroup :deep().el-button--text:focus,
+.el-button--text:hover {
+  color: #0F62FE;
 }
 </style>
