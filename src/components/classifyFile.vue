@@ -28,7 +28,7 @@
 
                   <div style="float: right;">
                      <el-tooltip content="刷新" placement="bottom" :open-delay=500>
-                        <img :src="require(`@/assets/icons/refresh.svg`)"
+                        <img :src="require(`@/assets/icons/refresh.svg`)" alt="刷新"
                            style="padding-top: 3px;height: 17px;width: 17px;margin-right: 30px;cursor:pointer;"
                            @click="getCurrTableData" />
                      </el-tooltip>
@@ -67,23 +67,23 @@
                      <div :id="scope.row.rowId" class="item-btn">
                         <el-tooltip content="移动" placement="bottom" :open-delay=500>
                            <el-button type="text" size="medium" style="float: left;" @click="moveFileObj(scope.row)">
-                              <i class="el-icon-folder-opened"></i>
+                              <em class="el-icon-folder-opened"></em>
                            </el-button>
                         </el-tooltip>
                         <el-tooltip content="下载" placement="bottom" :open-delay=500>
                            <el-button type="text" size="medium" style="float: left;">
-                              <i class="el-icon-download"></i>
+                              <em class="el-icon-download"></em>
                            </el-button>
                         </el-tooltip>
                         <el-tooltip content="分享" placement="bottom" :open-delay=500>
                            <el-button type="text" size="medium" style="float: left;">
-                              <i class="el-icon-share"></i>
+                              <em class="el-icon-share"></em>
                            </el-button>
                         </el-tooltip>
                         <el-dropdown trigger="click" style="margin-left: 10px" @command="updateFileObj">
                            <el-tooltip content="更多" placement="bottom" :open-delay=500>
                               <el-button type="text" size="medium" style="float: left;">
-                                 <i class="el-icon-more"></i>
+                                 <em class="el-icon-more"></em>
                               </el-button>
                            </el-tooltip>
                            <el-dropdown-menu slot="dropdown">
@@ -280,16 +280,17 @@ export default {
       },
 
       load() {
-         if(this.type != 'document'){
-         window.userOps.getClassifyFileData(this.type, this.userInfo.id, this.page * 20, data => {
-           
-            this.tableData = this.tableData.concat(this.formatTableData(data))
-            this.page++
-         })}else {
+         if (this.type != 'document') {
+            window.userOps.getClassifyFileData(this.type, this.userInfo.id, this.page * 20, data => {
+
+               this.tableData = this.tableData.concat(this.formatTableData(data))
+               this.page++
+            })
+         } else {
             window.userOps.getDocClassFileData(this.userInfo.id, this.page * 20, data => {
-                
-            this.tableData = this.tableData.concat(this.formatTableData(data))
-            this.page++
+
+               this.tableData = this.tableData.concat(this.formatTableData(data))
+               this.page++
             })
          }
       }
@@ -369,6 +370,7 @@ export default {
    color: black;
    font-size: 15px;
    position: absolute;
+   left: 120%;
    top: 12%;
    text-align: left;
    white-space: nowrap;
@@ -376,8 +378,7 @@ export default {
    height: 17px;
    text-overflow: ellipsis;
    overflow: hidden;
-   position: absolute;
-   left: 120%;
+   
 }
 
 .item-btn {
@@ -400,7 +401,7 @@ export default {
    background-color: #fff;
 }
 
-:deep().el-dialog__body {
+:deep() .el-dialog__body {
    padding: 10px 20px;
 }
 </style>

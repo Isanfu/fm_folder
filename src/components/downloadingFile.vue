@@ -24,7 +24,7 @@
 
                   <div style="float: right;">
                      <el-tooltip content="刷新" placement="bottom" :open-delay=500>
-                        <img :src="require(`@/assets/icons/refresh.svg`)"
+                        <img :src="require(`@/assets/icons/refresh.svg`)" alt="刷新"
                            style="padding-top: 3px;height: 17px;width: 17px;margin-right: 30px;cursor:pointer;"
                            @click="getCurrTableData" />
                      </el-tooltip>
@@ -63,15 +63,15 @@
                      <div :id="scope.row.rowId" class="item-btn">
                         <el-tooltip content="暂停" placement="bottom" :open-delay=500>
                            <el-button type="text" size="medium" style="float: left">
-                              <i v-if="scope.row.downloadStatus == 'downloading' || scope.row.downloadStatus == 'await'"
-                                 class="el-icon-video-pause" @click="singlePause(scope.row)"></i>
-                              <i v-else class='el-icon-video-play' @click="singleResume(scope.row)"></i>
+                              <em v-if="scope.row.downloadStatus == 'downloading' || scope.row.downloadStatus == 'await'"
+                                 class="el-icon-video-pause" @click="singlePause(scope.row)"></em>
+                              <em v-else class='el-icon-video-play' @click="singleResume(scope.row)"></em>
                            </el-button>
 
                         </el-tooltip>
                         <el-tooltip content="取消" placement="bottom" :open-delay=500>
                            <el-button type="text" size="medium" style="float: left;">
-                              <i @click="singleCancel(scope.row)" class="el-icon-close"></i>
+                              <em @click="singleCancel(scope.row)" class="el-icon-close"></em>
                            </el-button>
                         </el-tooltip>
                      </div>
@@ -455,6 +455,7 @@ export default {
    color: black;
    font-size: 15px;
    position: absolute;
+   left: 120%;
    top: 12%;
    text-align: left;
    white-space: nowrap;
@@ -462,8 +463,7 @@ export default {
    height: 17px;
    text-overflow: ellipsis;
    overflow: hidden;
-   position: absolute;
-   left: 120%;
+
 }
 
 .item-btn {
@@ -486,7 +486,7 @@ export default {
    background-color: #fff;
 }
 
-:deep().el-dialog__body {
+:deep() .el-dialog__body {
    padding: 10px 20px;
 }
 </style>

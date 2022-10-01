@@ -5,10 +5,12 @@ import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 const path = require('path')
 const fs = require('fs')
-const dbUtils = require('@/utils/dbUtils')
 const fileUtils = require('@/utils/fileUtils')
 const userUtils = require('@/utils/userUtils')
 const childProcess = require('child_process');
+const FileList = require('./db/FileList')
+const RemoteFileList = require('./db/RemoteFileList')
+
 
 
 
@@ -16,6 +18,13 @@ const childProcess = require('child_process');
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } }
 ])
+
+
+var httpFileServer = childProcess.fork(process.env.NODE_ENV == "development" ? "./src/child_process/httpServer.js" : "./resources/httpServer.js")
+var netFindAndFileBroadcast = childProcess.fork(process.env.NODE_ENV == "development" ? "./src/child_process/netFindAndFileBroadcast.js" : "./resources/netFindAndFileBroadcast.js")
+var downloadFile = childProcess.fork(process.env.NODE_ENV == "development" ? "./src/child_process/downloadFile.js" : "./resources/downloadFile.js")
+var readDirAndInsertToDB = childProcess.fork(process.env.NODE_ENV == "development" ? "./src/child_process/readDirAndInsertToDB.js" : "./resources/readDirAndInsertToDB.js")
+
 
 
 
@@ -45,9 +54,6 @@ async function createWindow() {
     }
 
   })
-// setInterval(()=>{
-//   win.webContents.send('hello',{data: 'world'})
-// },1000)
 
 
   //监听
@@ -90,10 +96,6 @@ async function createWindow() {
   ipcMain.handle('saveFilesObj', handleFileOpen)
 
 
-  var httpFileServer = childProcess.fork(process.env.NODE_ENV == "development" ? "./src/child_process/httpServer.js" : "./resources/httpServer.js")
-  var netFindAndFileBroadcast = childProcess.fork(process.env.NODE_ENV == "development" ? "./src/child_process/netFindAndFileBroadcast.js" : "./resources/netFindAndFileBroadcast.js")
-
-
 
   //接收子进程的消息
   netFindAndFileBroadcast.on('message', (msg) => {
@@ -119,53 +121,55 @@ async function createWindow() {
     })
   })
 
-  var downloadFile = childProcess.fork(process.env.NODE_ENV == "development" ? "./src/child_process/downloadFile.js" : "./resources/downloadFile.js")
 
   downloadFile.on('message', msg => {
-    win.webContents.send('downloadProgress',msg)
-   })
+    win.webContents.send('downloadProgress', msg)
+  })
   ipcMain.on('download', (event, val) => {
-    downloadFile.send({type: 'start',data: val})
-    fs.writeFileSync('src/file_broadcast/recordAwaitDownloadQueue.json',JSON.stringify(val))
+    downloadFile.send({ type: 'start', data: val })
+    fs.writeFileSync('src/file_broadcast/recordAwaitDownloadQueue.json', JSON.stringify(val))
   })
 
-  ipcMain.on('singlePause',(event,val)=>{
-    downloadFile.send({type:'singlePause',data: val})
-  })
- 
-  ipcMain.on('singleResume',(event,val)=>{
-    
-    downloadFile.send({type:'singleResume',data:val})
+  ipcMain.on('singlePause', (event, val) => {
+    downloadFile.send({ type: 'singlePause', data: val })
   })
 
+  ipcMain.on('singleResume', (event, val) => {
 
-  ipcMain.on('singleCancel',(e,val)=>{
-    downloadFile.send({type: 'singleCancel',data:val})
-  })
-  
-  ipcMain.on('allPause',(e,val)=>{
-    downloadFile.send({type: 'allPause',data: val})
+    downloadFile.send({ type: 'singleResume', data: val })
   })
 
-  ipcMain.on('allStart',(e,val)=>{
 
-    downloadFile.send({type:'allStart',data: val})
+  ipcMain.on('singleCancel', (e, val) => {
+    downloadFile.send({ type: 'singleCancel', data: val })
   })
 
-  ipcMain.on('allCancel',(e,val)=>{
-      downloadFile.send({type: 'allCancel',data: val})
+  ipcMain.on('allPause', (e, val) => {
+    downloadFile.send({ type: 'allPause', data: val })
   })
 
-  ipcMain.on('delDownloadedQueueItem',(event,val)=>{
-    downloadFile.send({type: 'delDownloadedQueueItem',data:val})
+  ipcMain.on('allStart', (e, val) => {
+
+    downloadFile.send({ type: 'allStart', data: val })
   })
 
+  ipcMain.on('allCancel', (e, val) => {
+    downloadFile.send({ type: 'allCancel', data: val })
+  })
+
+  ipcMain.on('delDownloadedQueueItem', (event, val) => {
+    downloadFile.send({ type: 'delDownloadedQueueItem', data: val })
+  })
+
+  ipcMain.on('readDirAndinsertToDB', (e, val) => {
+    console.log('aaaaa');
+    readDirAndInsertToDB.send(val)
+  })
 
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     //调试模式开关
     // Load the url of the dev server if in development mode
     await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
-    // if (!process.env.IS_TEST) win.webContents.openDevTools()
   } else {
     createProtocol('app')
     // Load the index.html when not in development
@@ -189,23 +193,41 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow()
 })
 
+
+// 生成菜单
+// const menu = Menu.buildFromTemplate(template)
+// Menu.setApplicationMenu(menu)
+
+
+
+
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', async () => {
-  // if (isDevelopment && !process.env.IS_TEST) {
-  //   // Install Vue Devtools
-  //   try {
-  //     await installExtension(VUEJS_DEVTOOLS)
-  //   } catch (e) {
-  //     console.error('Vue Devtools failed to install:', e.toString())
-  //   }
-  // }
+
 
   //初始化数据库
-  dbUtils.createDB(db => { })
+  new FileList().init()
+  new RemoteFileList().init()
   createWindow()
 })
+
+
+
+app.on('before-quit', () => {
+  //退出后，需要通知下线
+  const offlineNotify = childProcess.fork(process.env.NODE_ENV == "development" ? "./src/child_process/offlineNotify.js" : "./resources/offlineNotify.js", { detached: true, stdio: 'ignore' })
+  offlineNotify.unref()
+  httpFileServer.kill()
+  downloadFile.kill()
+  netFindAndFileBroadcast.kill()
+  readDirAndInsertToDB.kill()
+})
+
+
+
 
 // Exit cleanly on request from parent process in development mode.
 if (isDevelopment) {

@@ -27,7 +27,7 @@
 
                   <div style="float: right;">
                      <el-tooltip content="刷新" placement="bottom" :open-delay=500>
-                        <img :src="require(`@/assets/icons/refresh.svg`)"
+                        <img :src="require(`@/assets/icons/refresh.svg`)" alt="刷新"
                            style="padding-top: 3px;height: 17px;width: 17px;margin-right: 30px;cursor:pointer;"
                            @click="getCurrTableData" />
                      </el-tooltip>
@@ -66,7 +66,7 @@
                      <div :id="scope.row.rowId" class="item-btn">
                         <el-tooltip content="下载" placement="bottom" :open-delay=500>
                            <el-button type="text" size="medium" style="float: left;">
-                              <i class="el-icon-download" @click="downloadFile(scope.row)"></i>
+                              <em class="el-icon-download" @click="downloadFile(scope.row)"></em>
                            </el-button>
                         </el-tooltip>
 
@@ -209,6 +209,9 @@ export default {
                   this.tableData = this.formatTableData(res.data)
                } else
                   this.tableData = []
+            }).catch((err)=>{
+               console.log(err.message);
+               console.log('aaaa');
             })
          }
       },
@@ -278,9 +281,9 @@ export default {
             const t = JSON.stringify({
                netPath: this.currTopBarVal[this.currTopBarVal.length - 1].key == '0' ? val.netPath + val.filename : val.netPath + '/' + val.filename
             })
-            console.log(val);
+
             this.axios.post(`http://${val.ip}:9797/getFileListInFolder/${val.fileId}?${val.userId}`, t).then(res => {
-               console.log(res.data);
+
                for (const item of res.data) {
                   item.downloadedSize = 0
                   item.downloadSpeed = 0
@@ -381,6 +384,7 @@ export default {
    color: black;
    font-size: 15px;
    position: absolute;
+   left: 120%;
    top: 12%;
    text-align: left;
    white-space: nowrap;
@@ -388,8 +392,7 @@ export default {
    height: 17px;
    text-overflow: ellipsis;
    overflow: hidden;
-   position: absolute;
-   left: 120%;
+   
 }
 
 .item-btn {
@@ -412,7 +415,7 @@ export default {
    background-color: #fff;
 }
 
-:deep().el-dialog__body {
+:deep() .el-dialog__body {
    padding: 10px 20px;
 }
 </style>

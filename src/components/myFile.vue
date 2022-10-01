@@ -71,17 +71,17 @@
         <div style="float: right;">
           <el-dropdown trigger="click" @command="methodOfSort">
             <span class="el-dropdown-link" style="cursor: pointer;">
-              排序<i class="el-icon-caret-bottom el-icon-d-caret"></i>
+              排序<em class="el-icon-caret-bottom el-icon-d-caret"></em>
             </span>
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item class="clearfix" command="time">
-                按时间排序<i v-show="currMethodOfSort == 1" class="el-icon-check"></i>
+                按时间排序<em v-show="currMethodOfSort == 1" class="el-icon-check"></em>
               </el-dropdown-item>
               <el-dropdown-item class="clearfix" command="name">
-                按名称排序<i v-show="currMethodOfSort == 2" class="el-icon-check"></i>
+                按名称排序<em v-show="currMethodOfSort == 2" class="el-icon-check"></em>
               </el-dropdown-item>
               <el-dropdown-item class="clearfix" command="size">
-                按大小排序<i v-show="currMethodOfSort == 3" class="el-icon-check"></i>
+                按大小排序<em v-show="currMethodOfSort == 3" class="el-icon-check"></em>
               </el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
@@ -124,18 +124,18 @@
               <div :id="scope.row.rowId" class="item-btn">
                 <el-tooltip content="移动" placement="bottom" :open-delay="400">
                   <el-button type="text" size="medium" style="float: left;" @click="moveFileObj(scope.row)">
-                    <i class="el-icon-folder-opened"></i>
+                    <em class="el-icon-folder-opened"></em>
                   </el-button>
                 </el-tooltip>
                 <el-tooltip content="分享" placement="bottom" :open-delay="400">
                   <el-button type="text" size="medium" style="float: left;" @click="shareSingleFileObj(scope.row)">
-                    <i class="el-icon-share"></i>
+                    <em class="el-icon-share"></em>
                   </el-button>
                 </el-tooltip>
                 <el-dropdown trigger="click" style="margin-left: 10px" @command="updateFileObj">
                   <el-tooltip content="更多" placement="bottom" :open-delay="400">
                     <el-button type="text" size="medium" style="float: left;">
-                      <i class="el-icon-more"></i>
+                      <em class="el-icon-more"></em>
                     </el-button>
                   </el-tooltip>
                   <el-dropdown-menu slot="dropdown">
@@ -431,7 +431,7 @@ export default {
             cancelButtonText: '取消'
           }).then(newFileName => {
             const len = this.$root.$data.topBar.length
- console.log('1111');
+
             for (const item of this.tableData) {
               if (item.isDir == command.fileObj.isDir && item.filename == newFileName.value) {
                 if (item.filename == newFileName.value) {
@@ -440,7 +440,6 @@ export default {
                 }
               }
             }
-             console.log('2222');
             let name = ''
             if(command.fileObj.isDir==1)
               name = newFileName.value
@@ -750,7 +749,7 @@ export default {
   background-color: #fff;
 }
 
-:deep().el-dialog__body {
+:deep() .el-dialog__body {
   padding: 10px 20px;
 }
 </style>

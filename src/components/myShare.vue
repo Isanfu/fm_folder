@@ -21,7 +21,7 @@
             <div style="float: right;">
                <div style="float: right;">
                   <el-tooltip content="刷新" placement="bottom" :open-delay="400">
-                     <img :src="require(`@/assets/icons/refresh.svg`)"
+                     <img :src="require(`@/assets/icons/refresh.svg`)" alt="刷新"
                         style="margin:0px 30px 0 10px;padding-top: 3px;height: 17px;width: 17px;"
                         @click="getCurrTableData" />
 
@@ -357,7 +357,7 @@ export default {
    background-color: #fff;
 }
 
-:deep().el-dialog__body {
+:deep() .el-dialog__body {
    padding: 10px 20px;
 }
 </style>

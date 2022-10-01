@@ -49,31 +49,18 @@ downloadEmitter.on('updateDownloadingQueue', () => {
  * @param {*} dirpath 文件夹路径
  */
 function mkdirs(dirpath) {
-   if (!fs.existsSync(path.dirname(dirpath))) {
-      mkdirs(path.dirname(dirpath));
+   if (!fs.existsSync(dirpath)) {
+      if (!fs.existsSync(path.dirname(dirpath))) {
+         mkdirs(path.dirname(dirpath));
+      }
+      fs.mkdirSync(dirpath);
    }
-   fs.mkdirSync(dirpath);
 }
 
 
-
-// 检测启动时是否存在上一次未下载完成文件，存在即开始下载
-// if (fs.readFileSync('/Users/sanfu/Desktop/file_share/src/file_broadcast/recordAwaitDownloadQueue.json').toLocaleString() != '') {
-//    awaitDownloadQueue = JSON.parse(fs.readFileSync('/Users/sanfu/Desktop/file_share/src/file_broadcast/recordAwaitDownloadQueue.json').toLocaleString())
-//    console.log(awaitDownloadQueue.length);
-//    let i = 0
-//    while (awaitDownloadQueue.length > 0 && i < 2) {
-//       i++
-//       downloadingQueue.push(awaitDownloadQueue.shift())
-//    }
-//    downloadFile()
-// }
-
-
-// console.log('等待队列长度：' + awaitDownloadQueue.length);
-
-// var timer = undefined
-
+/**
+ * 文件下载，支持断点续传
+ */
 function downloadFile() {
    while (downloadingQueue.length > 0 && recordDownloadingQueue.length < 2) {
       const downloadItem = downloadingQueue.shift()
@@ -85,17 +72,24 @@ function downloadFile() {
             'Range': `bytes=${downloadItem.start}-${parseInt(downloadItem.fileSize) - 1}`
          }
       }
-      console.log(options);
       const req = http.get(`http://${downloadItem.ip}:9797/extBrowserDownloadFile/${downloadItem.fileId}?${downloadItem.userId}`, options, res => {
          console.log('开启下载：', downloadItem.filename);
          //记录请求对象
          recordRequestingQueue.push(req)
          var basePath = userConfig.downloadFileUrl
+
+
          if (os.platform() != 'win32') {
             if (downloadItem.downloadType == 'folder') {
                downloadItem.relativePath = downloadItem.relativePath.replaceAll('\\', '/')
-               if (!fs.existsSync(path.join(basePath, downloadItem.relativePath)))
-                  mkdirs(path.join(basePath, downloadItem.relativePath))
+               mkdirs(path.join(basePath, downloadItem.relativePath))
+               basePath = path.join(basePath, downloadItem.relativePath)
+            } else
+               basePath = userConfig.downloadFileUrl
+         } else {
+            if (downloadItem.downloadType == 'folder') {
+               downloadItem.relativePath = downloadItem.relativePath.replaceAll('/', '\\')
+               mkdirs(path.join(basePath, downloadItem.relativePath))
                basePath = path.join(basePath, downloadItem.relativePath)
             } else
                basePath = userConfig.downloadFileUrl
@@ -114,11 +108,9 @@ function downloadFile() {
 
             console.log('链接关闭：' + downloadItem.filename);
             if (downloadItem.downloadStatus != 'pause') {
-               // fs.renameSync(downloadItem.downloadUrl,path.join(basePath, './' + downloadItem.filename))
                downloadItem.downloadStatus = 'downloaded'
                downloadedQueue.push(downloadItem)
                recordDownloadedQueue.push(downloadItem)
-
                downloadEmitter.emit('updateDownloadedQueue')  //记录已下载文件放入文件中
 
                //下载完成后连接断开，从正在下载队列删除
@@ -127,8 +119,6 @@ function downloadFile() {
                })
                recordDownloadingQueue.splice(idx_downloaded, 1)
             }
-
-
 
             //删除请求对象
             for (let i = 0; i < recordRequestingQueue.length; i++) {
@@ -174,7 +164,7 @@ function singlePause(val) {
          recordDownloadingQueue[idx_recordDownloading].downloadStatus = 'pause'
          recordDownloadingQueue[idx_recordDownloading].start = recordDownloadingQueue[idx_recordDownloading].downloadedSize - 1
          pauseDownloadQueue.push(recordDownloadingQueue[idx_recordDownloading])
-         recordDownloadingQueue.splice(idx_recordDownloading,1)  //从正在下载队列删除
+         recordDownloadingQueue.splice(idx_recordDownloading, 1)  //从正在下载队列删除
       }
    }
    //等待队列暂停
@@ -214,7 +204,7 @@ function singleResume(val) {
 function singleCancel(val) {
    switch (val.downloadStatus) {
       case 'downloading': {
-         console.log('正在下载队列取消',val.filename);
+         console.log('正在下载队列取消', val.filename);
          for (let i = 0; i < recordRequestingQueue.length; i++) {
             const reqUrl = new URL(recordRequestingQueue[i].path, `http://${recordRequestingQueue[i].host}:9797`)
             const fileId = (reqUrl.pathname.split('/'))[2]
@@ -226,7 +216,7 @@ function singleCancel(val) {
          }
       } break;
       case 'pause': {
-         console.log('暂停队列取消',val.filename);
+         console.log('暂停队列取消', val.filename);
          for (let i = 0; i < pauseDownloadQueue.length; i++) {
             if (val.userId == pauseDownloadQueue[i].userId && val.fileId == pauseDownloadQueue[i].fileId) {
                pauseDownloadQueue.splice(i, 1)
@@ -234,7 +224,7 @@ function singleCancel(val) {
          }
       } break;
       case 'await': {
-         console.log('等待队列取消',val.filename);
+         console.log('等待队列取消', val.filename);
          for (let i = 0; i < awaitDownloadQueue.length; i++) {
             if (val.userId == awaitDownloadQueue[i].userId && val.fileId == awaitDownloadQueue[i].fileId) {
                awaitDownloadQueue.splice(i, 1)
@@ -246,25 +236,27 @@ function singleCancel(val) {
 //全部暂停
 function allPause() {
    //下载中暂停
-   for (const item of recordRequestingQueue) {
-      item.abort()
-   }
-   while(recordDownloadingQueue.length>0){
+   if (recordRequestingQueue.length > 0)
+      for (const item of recordRequestingQueue) {
+         item.abort()
+      }
+
+   while (recordDownloadingQueue.length > 0) {
       let tmp = recordDownloadingQueue.shift()
       tmp.downloadStatus = 'pause'
       pauseDownloadQueue.push(tmp)
    }
 
    //等待队列暂停
-   while(awaitDownloadQueue.length>0){
+   while (awaitDownloadQueue.length > 0) {
       let tmp = awaitDownloadQueue.shift()
       tmp.downloadStatus = 'pause'
       pauseDownloadQueue.push(tmp)
    }
 }
 //全部开始
-function allStart(){
-   while(pauseDownloadQueue.length>0){
+function allStart() {
+   while (pauseDownloadQueue.length > 0) {
       let tmp = pauseDownloadQueue.shift()
       tmp.downloadStatus = 'await'
       awaitDownloadQueue.push(tmp)
@@ -281,18 +273,18 @@ function allStart(){
    }
 }
 //全部取消
-function allCancel(){
-   while (recordRequestingQueue.length>0) {
+function allCancel() {
+   while (recordRequestingQueue.length > 0) {
       let tmp = recordRequestingQueue.shift()
       tmp.abort()
    }
-   while (recordDownloadingQueue.length>0) {
+   while (recordDownloadingQueue.length > 0) {
       recordDownloadingQueue.shift()
    }
-   while(awaitDownloadQueue.length>0)
+   while (awaitDownloadQueue.length > 0)
       awaitDownloadQueue.shift()
 
-   while(pauseDownloadQueue.length>0)
+   while (pauseDownloadQueue.length > 0)
       pauseDownloadQueue.shift()
 }
 
@@ -320,20 +312,14 @@ setInterval(() => {
 }, 1000)
 
 //从recordDownloadedQueue中删除一个
-function delDownloadedQueueItem(val){
-   const d = recordDownloadedQueue.findIndex(item=>{
+function delDownloadedQueueItem(val) {
+   const d = recordDownloadedQueue.findIndex(item => {
       return val.userId == item.userId && val.fileId == item.fileId
    })
-   recordDownloadedQueue.splice(d,1)
+   recordDownloadedQueue.splice(d, 1)
    downloadEmitter.emit('updateDownloadedQueue')
 }
 
-
-
-
-process.on('exit', (code) => {
-   console.log('子进程退出：' + code);
-})
 
 
 
@@ -378,15 +364,26 @@ process.on('message', msg => {
       case 'allPause': {
          console.log('全部暂停');
          allPause()
-      }break;
-      case 'allStart':{
+      } break;
+      case 'allStart': {
          console.log('全部开始');
          allStart()
-      }break;
-      case 'allCancel':{
+      } break;
+      case 'allCancel': {
          console.log('全部取消');
          allCancel()
       }
    }
 })
 
+/**
+ * 文件下载进程退出
+ * 若等待队列，正在下载队列还有任务全推到暂停队列，并进行持久化保存
+ * 
+*/
+process.on('SIGTERM', () => {
+   console.log('downloadFile进程退出');
+   allPause()
+   downloadEmitter.emit('updatePauseDownloadQueue')
+   process.exit()
+})

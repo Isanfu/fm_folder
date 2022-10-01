@@ -87,7 +87,7 @@ const getExtname = (filename) => {
 }
 
 //获取文件大小
-const getFstat = (path)=>{
+const getFstat = (path) => {
    return fs.statSync(path)
 }
 
@@ -202,7 +202,7 @@ const getDirObj = (p, callback) => {
    //给文件夹内的路径添加parentId
    for (const i in fileArr) {
       for (const j in fileArr) {
-         if (fileArr[i].absPath == fileArr[j].absPath + '/' + fileArr[j].name && fileArr[j].isDir == 1) {
+         if (fileArr[i].absPath == fileArr[j].absPath + path.sep + fileArr[j].name && fileArr[j].isDir == 1) {
             fileArr[i].parentId = fileArr[j].id
          }
       }
@@ -213,16 +213,8 @@ const getDirObj = (p, callback) => {
          item.parentId = fileArr[0].id
    }
    fileArr[0].parentId = '0'
-
-   // console.log('parentPAth：'+parentPath);
-   //文件数量
-   // console.log(fileNum);
-   // const t1 = Date.now()
-   // const fdArr = []
-   //给数组中的文件对象添加md5属性,文件夹的md5值为0
    var count = 0
    for (const item of fileArr) {
-
       if (item.isDir == 0) {
          getFileMd5(`${item.absPath}/${item.name}`, md5 => {
             item.md5 = md5
@@ -247,15 +239,15 @@ const getDirObj = (p, callback) => {
 
 }
 
-const t1 = Date.now()
-getDirObj('/Users/sanfu/Downloads/test',data=>{
-   console.log(data.length);
-   console.log(Date.now()-t1);
-})
+// const t1 = Date.now()
+// getDirObj('/Users/sanfu/Downloads/test',data=>{
+//    console.log(data.length);
+//    console.log(Date.now()-t1);
+// })
 
 //记录正在下载的任务
-const recordDownloadingFile = (val)=>{
-   fs.writeFileSync('src/file_broadcast/recordAwaitDownloadQueue.json',JSON.stringify(val))
+const recordDownloadingFile = (val) => {
+   fs.writeFileSync('src/file_broadcast/recordAwaitDownloadQueue.json', JSON.stringify(val))
 }
 
 //读取正在下载的任务
@@ -263,34 +255,10 @@ const getDownloadingObj = () => {
    return fs.readFileSync('src/file_broadcast/recordAwaitDownloadQueue.json').toLocaleString()
 }
 //读取下载已完成的任务
-const getDownloadedQueue = ()=>{
+const getDownloadedQueue = () => {
    return fs.readFileSync('src/file_broadcast/recordDownloadedFile.json').toLocaleString()
 }
 
-// const p = '/Users/sanfu/Downloads/d1'
-// getDirObj(p,fileArr=>{
-//    console.log(fileArr);
-// })
-
-
-
-// getFileObj(p,obj=>{
-//    console.log(obj);
-// })
-// const t1 = Date.now()
-// getFileMd5(p,(md5)=>{
-//    console.log(md5);
-//    console.log(Date.now()-t1);
-// })
-
-// md5File(p).then(hash=>{
-//    console.log(hash);
-//    console.log(Date.now()-t1);
-// })
-
-// const hash = md5File.sync(p)
-// console.log(hash);
-// console.log(Date.now()-t1);
 
 module.exports = {
    getExtname,

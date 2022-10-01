@@ -2,15 +2,12 @@
   <div id="body">
     <div style="height: 25px;width: 100%;background-color: #f4f4f7; -webkit-app-region: drag;"></div>
     <div id="aside">
+      
       <div id="asideTop">
         <div id="asideIcon">
-          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-            <path fill="#0F62FE"
-              d="M18.3,-22.4C32.8,-19,60.1,-29.5,67,-26.9C74,-24.3,60.6,-8.8,57.1,7.4C53.5,23.6,59.8,40.4,54.8,49.1C49.8,57.7,33.5,58.2,22.1,50.1C10.7,42,4.1,25.2,-9.6,24.8C-23.2,24.3,-43.9,40.2,-56.1,40.6C-68.3,40.9,-71.9,25.9,-68.7,13.1C-65.5,0.4,-55.4,-10.2,-48.1,-20.2C-40.8,-30.2,-36.2,-39.8,-28.7,-46.4C-21.1,-53,-10.6,-56.6,-4.4,-49.8C1.8,-43,3.7,-25.8,18.3,-22.4Z"
-              transform="translate(100 100)" />
-          </svg>
+          <img :src="require('@/assets/fm_folder.svg')" alt="" srcset="">
         </div>
-
+        <div style="float:left;margin-top: 50px;font-weight:500;font-style: italic; font-size:15px;">FM文件夹</div>
         <div id="asideBtnGroup" style="margin-top: 10px">
           <span type="text" class="asideGroupName">文件</span>
           <div>
@@ -75,11 +72,12 @@
 
         <span v-for="item in items" :key="item.key" style="font-size:medium; cursor:pointer;color: black;"
           @click="topBarOps(item.key)">
-          <i v-if="item.key != '0'" class="el-icon-arrow-right" /> {{ item.name }}
+          <em v-if="item.key != '0'" class="el-icon-arrow-right" /> {{ item.name }}
         </span>
 
 
       </div>
+
       <div id="searchInput">
 
         <el-input v-model="searchKey" placeholder="搜索全部文件" @keyup.enter.native="searchData"
@@ -89,6 +87,13 @@
 
       <div id="notify">
         <el-button type="text" style="color: #0f62fe">消息</el-button>
+      </div>
+
+      <div id="mobilePage">
+        <el-popover placement="bottom" trigger="click">
+          <div id="qrcode"></div>
+          <el-button slot="reference" type="text" style="color: #0f62fe" icon="el-icon-mobile-phone"></el-button> 
+        </el-popover>
       </div>
 
       <div id="avatar">
@@ -123,6 +128,7 @@
     </div>
 
   </div>
+
 </template>
 
 <script>
@@ -133,6 +139,7 @@ import myShare from "@/components/myShare.vue";
 import lanFile from "@/components/lanFile.vue";
 import downloadingFile from "@/components/downloadingFile.vue";
 import downloadedFile from "@/components/downloadedFile.vue";
+import AraleQrcode from 'arale-qrcode'
 export default {
   name: 'HomeView',
   components: {
@@ -153,7 +160,8 @@ export default {
       newPassword: '',
       searchKey: '',
       serarchMsg: '',
-      downloadedLen: 0
+      downloadedLen: 0,
+
     };
   },
   computed: {
@@ -193,6 +201,14 @@ export default {
     const user = this.$cookies.get('userInfo')
     if (user.avatar != 'default_avatar.png')
       this.defaultAvatarImg = user.avatar
+
+    const qrcodeConf = new AraleQrcode({
+      "render": 'svg',
+      "text": `http://${window.userOps.getLocalIp()}:9797/mobileDeviceRequest/0?${this.$cookies.get('userInfo').id}`,
+      "size": 120
+    })
+    var share_tools = document.querySelector('#qrcode')
+    share_tools.appendChild(qrcodeConf)
   },
 
   methods: {
@@ -209,13 +225,13 @@ export default {
           tmpBtn.style.color = 'black'
         }
       }
-      if (id == 'btn1' || id == 'btn2' || id == 'btn3' || id == 'btn8'|| id == 'btn9') {
+      if (id == 'btn1' || id == 'btn2' || id == 'btn3' || id == 'btn8' || id == 'btn9') {
         this.componentName = args
       } else {
         this.componentName = 'classifyFile'
         this.fileType = args
       }
-      if(id == 'btn9')
+      if (id == 'btn9')
         this.downloadedLen = 0
     },
     updatePassword() {
@@ -299,6 +315,7 @@ export default {
   margin-top: 20px;
   width: 60px;
   height: 60px;
+  float: left
 }
 
 #header {
@@ -313,6 +330,7 @@ export default {
 
 #searchInput,
 #notify,
+#mobilePage,
 #avatar {
   float: right;
   margin-right: 30px;
@@ -348,7 +366,7 @@ export default {
 }
 
 
-#asideBtnGroup :deep().el-button {
+#asideBtnGroup :deep() .el-button {
   background-color: #F4F4F7;
   width: 130px;
   float: left;
@@ -357,12 +375,12 @@ export default {
   padding: 10px;
 }
 
-#asideBtnGroup :deep().el-button--text {
+#asideBtnGroup :deep() .el-button--text {
   color: black;
   font-size: small;
 }
 
-#asideBtnGroup :deep().el-button--text:focus,
+#asideBtnGroup :deep() .el-button--text:focus,
 .el-button--text:hover {
   color: #0F62FE;
 }

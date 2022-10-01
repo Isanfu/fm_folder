@@ -47,12 +47,12 @@
                      <div :id="scope.row.rowId" class="item-btn">
                         <el-tooltip content="本地打开" placement="bottom" :open-delay=500>
                            <el-button type="text" size="medium" style="float: left;">
-                              <i class="el-icon-search"></i>
+                              <em class="el-icon-search"></em>
                            </el-button>
                         </el-tooltip>
                         <el-tooltip content="清除记录" placement="bottom" :open-delay=500>
                            <el-button type="text" size="medium" style="float: left;">
-                              <i @click="delItem(scope.row)" class="el-icon-close"></i>
+                              <em @click="delItem(scope.row)" class="el-icon-close"></em>
                            </el-button>
                         </el-tooltip>
                      </div>
@@ -251,6 +251,7 @@ export default {
    color: black;
    font-size: 15px;
    position: absolute;
+   left: 120%;
    top: 12%;
    text-align: left;
    white-space: nowrap;
@@ -258,8 +259,7 @@ export default {
    height: 17px;
    text-overflow: ellipsis;
    overflow: hidden;
-   position: absolute;
-   left: 120%;
+   
 }
 
 .item-btn {
@@ -282,7 +282,7 @@ export default {
    background-color: #fff;
 }
 
-:deep().el-dialog__body {
+:deep() .el-dialog__body {
    padding: 10px 20px;
 }
 </style>

@@ -14,6 +14,7 @@ module.exports= {
    fileListDbPath: path.join(os.homedir(),'./fm_folder','/fileList.db'),   //文件列表数据库
    remoteFileListDbPath: path.join(os.homedir(),'./fm_folder','/remoteFileList.db'),  //局域网分享数据库
    downloadFileUrl: path.join(os.homedir(),'./Downloads/test')
+   
 }
 
 
