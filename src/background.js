@@ -1,6 +1,6 @@
 'use strict'
-
-import { app, protocol, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, protocol, BrowserWindow, ipcMain, dialog, shell,Menu } from 'electron'
+import { resourcesPath } from 'process'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 const path = require('path')
@@ -10,27 +10,23 @@ const userUtils = require('@/utils/userUtils')
 const childProcess = require('child_process');
 const FileList = require('./db/FileList')
 const RemoteFileList = require('./db/RemoteFileList')
-
-
-
+const {template} = require('./menu')
+const logger = require('electron-log')
 
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } }
 ])
 
-
-var httpFileServer = childProcess.fork(process.env.NODE_ENV == "development" ? "./src/child_process/httpServer.js" : "./resources/httpServer.js")
-var netFindAndFileBroadcast = childProcess.fork(process.env.NODE_ENV == "development" ? "./src/child_process/netFindAndFileBroadcast.js" : "./resources/netFindAndFileBroadcast.js")
-var downloadFile = childProcess.fork(process.env.NODE_ENV == "development" ? "./src/child_process/downloadFile.js" : "./resources/downloadFile.js")
-var readDirAndInsertToDB = childProcess.fork(process.env.NODE_ENV == "development" ? "./src/child_process/readDirAndInsertToDB.js" : "./resources/readDirAndInsertToDB.js")
-
+var httpFileServer = childProcess.fork(process.env.NODE_ENV == "development" ? "./src/child_process/httpServer.js" : process.env.NODE_ENV == "development" ? "./src/child_process/httpServer.js" : path.join(resourcesPath, './child_process/httpServer.js'))
+var netFindAndFileBroadcast = childProcess.fork(process.env.NODE_ENV == "development" ? "./src/child_process/netFindAndFileBroadcast.js" : process.env.NODE_ENV == "development" ? "./src/child_process/httpServer.js" : path.join(resourcesPath, './child_process/netFindAndFileBroadcast.js'))
+var downloadFile = childProcess.fork(process.env.NODE_ENV == "development" ? "./src/child_process/downloadFile.js" : path.join(resourcesPath,'./child_process/downloadFile.js'))
+var readDirAndInsertToDB = childProcess.fork(process.env.NODE_ENV == "development" ? "./src/child_process/readDirAndInsertToDB.js" : path.join(resourcesPath,'./child_process/readDirAndInsertToDB.js'))
 
 
 
-
+logger.info('app start...')
 async function createWindow() {
-
 
   // Create the browser window.
   const win = new BrowserWindow({
@@ -40,13 +36,8 @@ async function createWindow() {
     minHeight: 650,
     center: true,
     backgroundColor: '#f1f1f1',
-    titleBarStyle: 'hidden',
-    titleBarOverlay: { color: "#fff", symbolColor: "black" },
-
+    titleBarStyle: 'hidden',   //win注释这条
     webPreferences: {
-
-      // Use pluginOptions.nodeIntegration, leave this alone
-      // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
       nodeIntegration: true,
       //上下文隔离
       contextIsolation: true,
@@ -54,11 +45,8 @@ async function createWindow() {
     }
 
   })
-
-
   //监听
   ipcMain.on('newAvatar', (event, attr, userId) => {
-
 
     dialog.showOpenDialog({
       title: '选择图片',
@@ -68,7 +56,6 @@ async function createWindow() {
       }],
       buttonLabel: '选择'
     }).then((res) => {
-      console.log(res.filePaths.length);
       if (res.filePaths.length > 0) {
         //移动文件
         fileUtils.getFileMd5(res.filePaths[0], md5 => {
@@ -76,8 +63,6 @@ async function createWindow() {
           fs.copyFileSync(res.filePaths[0], 'src/assets/' + dist)
           userUtils.updateUser(attr, userId, dist)
         })
-      } else {
-        console.log(1);
       }
     })
   })
@@ -95,8 +80,6 @@ async function createWindow() {
   }
   ipcMain.handle('saveFilesObj', handleFileOpen)
 
-
-
   //接收子进程的消息
   netFindAndFileBroadcast.on('message', (msg) => {
     console.log('from child: ' + JSON.stringify(JSON.parse(msg)))
@@ -109,25 +92,28 @@ async function createWindow() {
 
   //用户登录提醒
   ipcMain.on('ding', () => {
-    netFindAndFileBroadcast.send({ type: 'ding', data: fs.readFileSync('src/file_broadcast/lastFileBroadcastJson.json').toLocaleString() })   //客户端不仅需要接收还要返回，用户登录时使用
+    netFindAndFileBroadcast.send({ type: 'ding', data: fs.readFileSync(process.env.NODE_ENV == "development" ?'src/file_broadcast/lastFileBroadcastJson.json': path.join(resourcesPath,'./file_broadcast/lastFileBroadcastJson.json')).toLocaleString() })   //客户端不仅需要接收还要返回，用户登录时使用
   })
+
+
 
   ipcMain.on('share', (event, user) => {
     userUtils.getMyShareFileListData(user, broadcastInfo => {
-      fs.writeFile('src/file_broadcast/lastFileBroadcastJson.json', JSON.stringify(broadcastInfo), err => {
-        if (err) throw err
-        netFindAndFileBroadcast.send({ type: 'broadcast', data: broadcastInfo })   //客户端只需要接收，分享表更新操作时使用
-      })
+      fs.writeFileSync(process.env.NODE_ENV == "development" ?'src/file_broadcast/lastFileBroadcastJson.json': path.join(resourcesPath,'./file_broadcast/lastFileBroadcastJson.json'), JSON.stringify(broadcastInfo))
+      netFindAndFileBroadcast.send({ type: 'broadcast', data: broadcastInfo })   //客户端只需要接收，分享表更新操作时使用
     })
   })
 
+  ipcMain.on('shareMethodOfNum',(e,shareNum)=>{
+    netFindAndFileBroadcast.send({type: 'shareNum',data: shareNum})
+  })
 
   downloadFile.on('message', msg => {
     win.webContents.send('downloadProgress', msg)
   })
   ipcMain.on('download', (event, val) => {
     downloadFile.send({ type: 'start', data: val })
-    fs.writeFileSync('src/file_broadcast/recordAwaitDownloadQueue.json', JSON.stringify(val))
+    fs.writeFileSync(process.env.NODE_ENV == "development" ?'src/file_broadcast/lastFileBroadcastJson.json': path.join(resourcesPath,'./file_broadcast/lastFileBroadcastJson.json'), JSON.stringify(val))
   })
 
   ipcMain.on('singlePause', (event, val) => {
@@ -162,9 +148,16 @@ async function createWindow() {
   })
 
   ipcMain.on('readDirAndinsertToDB', (e, val) => {
-    console.log('aaaaa');
     readDirAndInsertToDB.send(val)
   })
+
+  ipcMain.on('openInFinder', (e, path) => {
+    shell.showItemInFolder(path)
+  })
+  ipcMain.on('openFile', (e, path) => {
+    shell.openPath(path)
+  })
+
 
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     //调试模式开关
@@ -195,8 +188,8 @@ app.on('activate', () => {
 
 
 // 生成菜单
-// const menu = Menu.buildFromTemplate(template)
-// Menu.setApplicationMenu(menu)
+const menu = Menu.buildFromTemplate(template)
+Menu.setApplicationMenu(menu)
 
 
 
@@ -206,8 +199,6 @@ app.on('activate', () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', async () => {
-
-
   //初始化数据库
   new FileList().init()
   new RemoteFileList().init()
@@ -216,9 +207,10 @@ app.on('ready', async () => {
 
 
 
+
 app.on('before-quit', () => {
   //退出后，需要通知下线
-  const offlineNotify = childProcess.fork(process.env.NODE_ENV == "development" ? "./src/child_process/offlineNotify.js" : "./resources/offlineNotify.js", { detached: true, stdio: 'ignore' })
+  const offlineNotify = childProcess.fork(process.env.NODE_ENV == "development" ? "./src/child_process/offlineNotify.js" : path.join(resourcesPath,'./child_process/offlineNotify.js'), { detached: true, stdio: 'ignore' })
   offlineNotify.unref()
   httpFileServer.kill()
   downloadFile.kill()

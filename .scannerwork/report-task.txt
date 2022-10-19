@@ -2,5 +2,5 @@ projectKey=fm_folder_pc
 serverUrl=http://192.168.2.169:9000
 serverVersion=8.9.8.54436
 dashboardUrl=http://192.168.2.169:9000/dashboard?id=fm_folder_pc
-ceTaskId=AYORV3-rNS8weG1RmNNe
-ceTaskUrl=http://192.168.2.169:9000/api/ce/task?id=AYORV3-rNS8weG1RmNNe
+ceTaskId=AYOv5Ke6GaNYoBgC9-_u
+ceTaskUrl=http://192.168.2.169:9000/api/ce/task?id=AYOv5Ke6GaNYoBgC9-_u

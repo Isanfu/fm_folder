@@ -36,7 +36,7 @@
          </div>
 
 
-         <el-table @row-dblclick="doubleClickCurrRow" highlight-current-row @current-change="currRow"
+         <el-table highlight-current-row @current-change="currRow"
             :cell-style="{ padding: '2px 0' }" ref="multipleTable" :data="tableData" tooltip-effect="dark"
             style="width: 100%;margin-top: 100px;" @cell-mouse-enter="showMenu" v-el-table-infinite-scroll="load"
             :infinite-scroll-disabled="false" :height="tableHeight"
@@ -108,7 +108,7 @@ export default {
          multipleTable: [],
          multipleSelection: [],
          currTopBarVal: this.$root.$data.topBar,
-         userInfo: this.$cookies.get('userInfo'),
+         userInfo: this.$root.$data.userInfo,
          namesakeWarmingDialog: false,
          recordNamesakeFileObj: [],
          recordNamesakeFileObjOnTableData: [],
@@ -119,74 +119,14 @@ export default {
    },
    methods: {
       load() { },
-      //打开主进程文件对话框
-      saveFilesObjOnMainProcess() {
-         window.fileOps.saveFilesObjOnMainProcess().then(res => {
-            console.log(res);
-
-            let namesakeFileObjArr = []
-            res.forEach(itemA => {
-               this.tableData.forEach(itemB => {
-                  if (window.fileOps.getFileObjName(itemA) == itemB.filename) {
-                     this.recordNamesakeFileObjOnTableData.push(itemB)
-                     namesakeFileObjArr.push({
-                        name: window.fileOps.getFileObjName(itemA),
-                        path: itemA
-                     })
-                  }
-               })
-            });
-
-            if (namesakeFileObjArr.length > 0) {
-               this.namesakeWarmingDialog = true
-               this.recordNamesakeFileObj = namesakeFileObjArr
-            }
-            //不同名文件，可以直接插入
-            const unNamesake = res.filter(itemA => {
-               return namesakeFileObjArr.every(itemB => {
-                  return itemB.name != window.fileOps.getFileObjName(itemA)
-               })
-            })
-            const filePathArr = []
-            const len = this.$root.$data.topBar.length
-            //插入文件
-            for (const item of unNamesake) {
-               if (window.fileOps.isDir(item))
-                  window.fileOps.saveDir(this.userInfo, item, this.$root.$data.topBar[len - 1])
-               else
-                  filePathArr.push(item)
-            }
-            window.fileOps.saveFile(this.userInfo, filePathArr, this.$root.$data.topBar[len - 1])
-
-         })
-
-      },
       //鼠标移入显示菜单
       showMenu(tableItem) {
-         const m = document.getElementById(tableItem.rowId)
-         if (m !== null)
-            m.style.visibility = 'visible'
-
-         let len = this.tableData.length
-
-         for (let i = 1; i <= len; i++) {
-            if (('row' + i) !== tableItem.rowId) {
-               let tmpId = document.getElementById('row' + i)
-               tmpId.style.visibility = 'hidden'
-            }
-         }
+        this.showRowMenu(tableItem,this)
       },
       currRow(val) {
-         this.tableData.forEach(item => {
-            if (item == val)
-               this.$refs.multipleTable.toggleRowSelection(val, true)
-            else
-               this.$refs.multipleTable.toggleRowSelection(item, false)
-         })
+         this.checkedTableRow(val,this)
       },
-      doubleClickCurrRow(row) {
-         console.log(row);
-      },
+
       handleSelectionChange(val) {
          this.multipleSelection = val;
       },
@@ -249,7 +189,6 @@ export default {
          // this.tableData = this.formatTableData(this.$root.$data.awaitDownloadQueue)
       },
       getChildTableData(val) {
-         // console.log(val.childFileList);
          if (val.isDir == 1) {
             this.$root.$data.topBar.push({
                key: val.id,
@@ -262,75 +201,11 @@ export default {
             })
          }
       },
-      delFileObjArr() {
-         this.$confirm('是否删除？', '提示', {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning'
-         }).then(() => {
-            window.userOps.delFileObjArr(this.multipleSelection, this.userInfo.id, data => {
-               console.log(data);
-            })
-         }).catch(() => {
-            console.log('取消');
-         })
-      },
-      updateFileObj(command) {
-         const tmpFileObjArr = []
-         switch (command.name) {
-            case 'delFile':
-               tmpFileObjArr.push(command.fileObj)
-               this.$confirm('是否删除？', '提示', {
-                  confirmButtonText: '确定',
-                  cancelButtonText: '取消',
-                  type: 'warning'
-               }).then(() => {
-                  window.userOps.delFileObjArr(tmpFileObjArr, this.userInfo.id, data => {
-                     console.log(data);
-                  })
-               }).catch(() => {
-                  console.log('取消');
-               }); break;
-            case 'rename':
-               this.$prompt('输入新文件名', '提示', {
-                  confirmButtonText: '确定',
-                  cancelButtonText: '取消'
-               }).then(newFileName => {
-                  const len = this.$root.$data.topBar.length
-                  console.log(command.fileObj);
-                  for (const item of this.tableData) {
-                     if (item.isDir == 1 && command.fileObj.isDir == 1) {
-                        if (item.filename == newFileName.value) {
-                           this.$message.error('文件夹已存在！');
-                           return
-                        }
-                     }
-                     if (item.isDir == 0 && command.fileObj.isDir == 0) {
-                        var name = newFileName.value + window.fileOps.getExtname(command.fileObj.filename)
-                        if (item.filename == name) {
-                           this.$message.error('文件已存在！');
-                           return
-                        }
-                     }
-                  }
-                  window.userOps.updateFilename(command.fileObj, this.userInfo.id, name, this.currTopBarVal[len - 1].netPath, data => {
-                     console.log(data);
-                  })
-               }).catch(() => {
-                  console.log('取消');
-               }); break;
-         }
-      },
-
-
    },
    computed: {
       topMenu: {
          get: function () {
-            if (this.multipleSelection.length != 0)
-               return true
-            else
-               return false
+            return this.multipleSelection.length != 0
          }
 
       },
@@ -341,6 +216,7 @@ export default {
             return '开始'
       },
       btnPause: function () {
+
          if (this.multipleSelection.length == 0)
             return '全部暂停'
          else
@@ -355,26 +231,10 @@ export default {
 
    },
    mounted() {
-      let mainHeader = document.getElementById('mainHeader')
-      let fileItemAndFileOps = document.getElementById('fileItemAndFileOps')
-      mainHeader.style.width = document.documentElement.clientWidth - 210 + 'px'
-      fileItemAndFileOps.style.width = document.documentElement.clientWidth - 210 + 'px'
-      this.tableHeight = document.documentElement.clientHeight - 185
-      window.addEventListener('resize', () => {
-         mainHeader.style.width = document.documentElement.clientWidth - 210 + 'px'
-         fileItemAndFileOps.style.width = document.documentElement.clientWidth - 210 + 'px'
-         this.tableHeight = document.documentElement.clientHeight - 185
-      })
-      this.$root.$data.topBar.length = 0
-      this.$root.$data.topBar.push({
-         key: '0',
-         name: '文件',
-         netPath: window.userOps.rootNetPath(this.userInfo.username) + '/'
-      })
+      this.initComp(this)
       const size = filesize.partial({ base: 2, standard: "jedec" });
       window.userOps.removeDownloadProgressListener()
       window.userOps.downloadQueue((event, value) => {
-         console.log(value);
          for (let item of value) {
             item.fileSize = size(item.fileSize)
             item.downloadedSize = size(item.downloadedSize)
@@ -399,15 +259,12 @@ export default {
                   this.$root.$data.awaitDownloadQueue[d].downloadedSize = item.downloadedSize
                   this.$root.$data.awaitDownloadQueue[d].downloadSpeed = item.downloadSpeed
                   this.$root.$data.awaitDownloadQueue[d].downloadStatus = item.downloadStatus
+                  this.$root.$data.awaitDownloadQueue[d].rowId = 'row'+(d+1)
                }
             }
 
          }
-         let i = 1
-         for (const item of this.$root.$data.awaitDownloadQueue) {
-            item.rowId = 'row' + i
-            i++
-         }
+        
          if (value.length == 0){
             this.tableData = []
             this.$root.$data.awaitDownloadQueue = []
@@ -420,73 +277,5 @@ export default {
 }
 </script>
 <style scoped>
-#mainHeader {
-   border-top-left-radius: 10px;
-   border-top-right-radius: 10px;
-   white-space: nowrap;
-   padding: 10px;
-   border-bottom: rgba(236, 234, 234, 0.6) solid 1px;
-   position: absolute;
-   top: 0px;
-   background-color: white;
-
-}
-
-#mainBody {
-   white-space: nowrap;
-}
-
-.el-checkbox__inner {
-   background-color: #0f62fe;
-   border-color: #0f62fe;
-}
-
-.icon-like {
-   width: 22px;
-   height: 22px;
-}
-
-#filename-parent {
-   position: relative;
-}
-
-.filename-child {
-   font-weight: 400;
-   color: black;
-   font-size: 15px;
-   position: absolute;
-   left: 120%;
-   top: 12%;
-   text-align: left;
-   white-space: nowrap;
-   width: 300px;
-   height: 17px;
-   text-overflow: ellipsis;
-   overflow: hidden;
-
-}
-
-.item-btn {
-   position: absolute;
-   right: 0%;
-   top: 10%;
-   margin-right: 20px;
-}
-
-#fileItemAndFileOps {
-
-   font-size: large;
-   font-weight: 500;
-   color: #606266;
-   height: 30px;
-   padding: 10px;
-   position: absolute;
-   top: 61px;
-
-   background-color: #fff;
-}
-
-:deep() .el-dialog__body {
-   padding: 10px 20px;
-}
+   
 </style>

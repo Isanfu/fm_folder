@@ -46,7 +46,7 @@
                      <!-- 表格行菜单显示-->
                      <div :id="scope.row.rowId" class="item-btn">
                         <el-tooltip content="本地打开" placement="bottom" :open-delay=500>
-                           <el-button type="text" size="medium" style="float: left;">
+                           <el-button type="text" size="medium" style="float: left;" @click="openInFinder(scope.row)">
                               <em class="el-icon-search"></em>
                            </el-button>
                         </el-tooltip>
@@ -61,7 +61,7 @@
             </el-table-column>
             <el-table-column prop="fileSize" sortable label="大小" width="150">
             </el-table-column>
-            <el-table-column prop="modifyTime" sortable label="创建时间" width="200">
+            <el-table-column prop="modifyTime" sortable label="创建时间" show-overflow-tooltip>
             </el-table-column>
 
          </el-table>
@@ -78,42 +78,26 @@ export default {
          tableData: [],
          multipleTable: [],
          multipleSelection: [],
-         currTopBarVal: this.$root.$data.topBar,
-         userInfo: this.$cookies.get('userInfo'),
-         namesakeWarmingDialog: false,
+         userInfo: this.$root.$data.userInfo,
          recordNamesakeFileObj: [],
-         recordNamesakeFileObjOnTableData: [],
-         page: 1,
-         i: 21,
          tableHeight: undefined
       }
    },
    methods: {
       //鼠标移入显示菜单
       showMenu(tableItem) {
-         const m = document.getElementById(tableItem.rowId)
-         if (m !== null)
-            m.style.visibility = 'visible'
-
-         let len = this.tableData.length
-
-         for (let i = 1; i <= len; i++) {
-            if (('row' + i) !== tableItem.rowId) {
-               let tmpId = document.getElementById('row' + i)
-               tmpId.style.visibility = 'hidden'
-            }
-         }
+         this.showRowMenu(tableItem, this)
       },
       currRow(val) {
-         this.tableData.forEach(item => {
-            if (item == val)
-               this.$refs.multipleTable.toggleRowSelection(val, true)
-            else
-               this.$refs.multipleTable.toggleRowSelection(item, false)
-         })
+         this.checkedTableRow(val, this)
       },
       doubleClickCurrRow(row) {
-         console.log(row);
+         row.absPath = window.userOps.getDownloadFileUrl()
+         row.isDir == 1 ? this.getChildTableData(row) : window.userOps.openFile(row)
+      },
+      openInFinder(val) {
+         val.absPath = window.userOps.getDownloadFileUrl()
+         window.userOps.openInFinder(val)
       },
       handleSelectionChange(val) {
          this.multipleSelection = val;
@@ -154,29 +138,13 @@ export default {
             } break;
          }
       },
-      delFileObjArr() {
-         this.$confirm('是否删除？', '提示', {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning'
-         }).then(() => {
-            window.userOps.delFileObjArr(this.multipleSelection, this.userInfo.id, data => {
-               console.log(data);
-            })
-         }).catch(() => {
-            console.log('取消');
-         })
-      },
       load() { }
 
    },
    computed: {
       topMenu: {
          get: function () {
-            if (this.multipleSelection.length != 0)
-               return true
-            else
-               return false
+            return this.multipleSelection.length != 0
          }
       },
       btnClear: function () {
@@ -188,101 +156,15 @@ export default {
 
    },
    mounted() {
-      let mainHeader = document.getElementById('mainHeader')
-      let fileItemAndFileOps = document.getElementById('fileItemAndFileOps')
-      mainHeader.style.width = document.documentElement.clientWidth - 210 + 'px'
-      fileItemAndFileOps.style.width = document.documentElement.clientWidth - 210 + 'px'
-      this.tableHeight = document.documentElement.clientHeight - 185
-      window.addEventListener('resize', () => {
-         mainHeader.style.width = document.documentElement.clientWidth - 210 + 'px'
-         fileItemAndFileOps.style.width = document.documentElement.clientWidth - 210 + 'px'
-         this.tableHeight = document.documentElement.clientHeight - 185
-      })
-      this.$root.$data.topBar.length = 0
-      this.$root.$data.topBar.push({
-         key: '0',
-         name: '文件',
-         netPath: window.userOps.rootNetPath(this.userInfo.username) + '/'
-      })
+      this.initComp(this)
       if (window.userOps.getDownloadedQueue() != '') {
          this.tableData = this.formatTableData(JSON.parse(window.userOps.getDownloadedQueue()))
       }
       else
          this.tableData = []
-
-
-
    }
 }
 </script>
 <style scoped>
-#mainHeader {
-   border-top-left-radius: 10px;
-   border-top-right-radius: 10px;
-   white-space: nowrap;
-   padding: 10px;
-   border-bottom: rgba(236, 234, 234, 0.6) solid 1px;
-   position: absolute;
-   top: 0px;
-   background-color: white;
 
-}
-
-#mainBody {
-   white-space: nowrap;
-}
-
-.el-checkbox__inner {
-   background-color: #0f62fe;
-   border-color: #0f62fe;
-}
-
-.icon-like {
-   width: 22px;
-   height: 22px;
-}
-
-#filename-parent {
-   position: relative;
-}
-
-.filename-child {
-   font-weight: 400;
-   color: black;
-   font-size: 15px;
-   position: absolute;
-   left: 120%;
-   top: 12%;
-   text-align: left;
-   white-space: nowrap;
-   width: 300px;
-   height: 17px;
-   text-overflow: ellipsis;
-   overflow: hidden;
-   
-}
-
-.item-btn {
-   position: absolute;
-   right: 0%;
-   top: 10%;
-   margin-right: 20px;
-}
-
-#fileItemAndFileOps {
-
-   font-size: large;
-   font-weight: 500;
-   color: #606266;
-   height: 30px;
-   padding: 10px;
-   position: absolute;
-   top: 61px;
-
-   background-color: #fff;
-}
-
-:deep() .el-dialog__body {
-   padding: 10px 20px;
-}
 </style>

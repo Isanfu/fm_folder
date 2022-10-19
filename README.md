@@ -1,24 +1,20 @@
-# file_share
+# fm_folder
+fm文件夹，即是frequency-modulation folder，又是file-map folder
 
-## Project setup
-```
-npm install
-```
-
-### Compiles and hot-reloads for development
-```
-npm run serve
+## 功能
+```text
+   1、文件映射
+   2、文件局域网共享
+   3、文件下载
 ```
 
-### Compiles and minifies for production
-```
-npm run build
-```
-
-### Lints and fixes files
-```
-npm run lint
+## 推荐场景
+```text
+   1、局域网内，文件共享
+   2、对深层文件夹中的文件进行映射，快捷访问
 ```
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+## 界面
+![](assets/p1.png)
+![](assets/p2.png)
+![](assets/p3.png)

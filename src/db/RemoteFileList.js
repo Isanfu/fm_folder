@@ -12,10 +12,15 @@ class RemoteFileList{
       + 'isDir INT(1),'
       + 'absPath TEXT,'
       + 'netPath TEXT,'
+      + 'shareNum INT(8),'
       + 'ip CHAR(15),'
       + 'port INT(5),'
       + 'createTime INT(20));'
-      rdb.run(createRemoteShareFileListTable)
+      rdb.run(createRemoteShareFileListTable,(err)=>{
+         if(err) throw err
+         rdb.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_rm ON remote_file_share(fileId, userId,shareNum)')
+      })
+
    }
    
 }

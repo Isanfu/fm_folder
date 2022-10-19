@@ -2,7 +2,7 @@
    <div id="mainContainer">
       <div id="mainHeader">
          <el-button round icon="el-icon-upload" style="background-color: rgb(23,55,245); color: #fff;"
-            @click="saveFilesObjOnMainProcess">文件上传
+            @click="shareNum">分享码
          </el-button>
          <el-button-group style="margin-left: 20px" v-show="topMenu">
             <el-button size="small" round @click="downloadMultipleFile">下载</el-button>
@@ -10,7 +10,6 @@
 
       </div>
       <div id="mainBody">
-
          <div id="fileItemAndFileOps">
             <span>
                <span v-if="multipleSelection.length == 0" style="margin-left: 10px;">
@@ -22,9 +21,7 @@
                      {{ multipleSelection.length }}
                   </span>
                </span>
-
                <div style="float: right;">
-
                   <div style="float: right;">
                      <el-tooltip content="刷新" placement="bottom" :open-delay=500>
                         <img :src="require(`@/assets/icons/refresh.svg`)" alt="刷新"
@@ -39,7 +36,7 @@
          </div>
 
 
-         <el-table @row-dblclick="doubleClickCurrRow" highlight-current-row @current-change="currRow"
+         <el-table highlight-current-row @current-change="currRow"
             :cell-style="{ padding: '2px 0' }" ref="multipleTable" :data="tableData" tooltip-effect="dark"
             style="width: 100%;margin-top: 100px;" @cell-mouse-enter="showMenu" v-el-table-infinite-scroll="load"
             :infinite-scroll-disabled="false" :height="tableHeight"
@@ -97,9 +94,7 @@ export default {
          multipleTable: [],
          multipleSelection: [],
          currTopBarVal: this.$root.$data.topBar,
-         userInfo: this.$cookies.get('userInfo'),
-         isTopBar: true,
-         singleTmpFileObjArr: [],  //临时记录
+         userInfo: this.$root.$data.userInfo,
          namesakeWarmingDialog: false,
          recordNamesakeFileObj: [],
          recordNamesakeFileObjOnTableData: [],
@@ -115,71 +110,28 @@ export default {
    },
    methods: {
       //打开主进程文件对话框
-      saveFilesObjOnMainProcess() {
-         window.fileOps.saveFilesObjOnMainProcess().then(res => {
-            console.log(res);
-
-            let namesakeFileObjArr = []
-            res.forEach(itemA => {
-               this.tableData.forEach(itemB => {
-                  if (window.fileOps.getFileObjName(itemA) == itemB.filename) {
-                     this.recordNamesakeFileObjOnTableData.push(itemB)
-                     namesakeFileObjArr.push({
-                        name: window.fileOps.getFileObjName(itemA),
-                        path: itemA
-                     })
-                  }
-               })
-            });
-            if (namesakeFileObjArr.length > 0) {
-               this.namesakeWarmingDialog = true
-               this.recordNamesakeFileObj = namesakeFileObjArr
-            }
-            //不同名文件，可以直接插入
-            const unNamesake = res.filter(itemA => {
-               return namesakeFileObjArr.every(itemB => {
-                  return itemB.name != window.fileOps.getFileObjName(itemA)
-               })
-            })
-            const filePathArr = []
-            const len = this.$root.$data.topBar.length
-            //插入文件
-            for (const item of unNamesake) {
-               if (window.fileOps.isDir(item))
-                  window.fileOps.saveDir(this.userInfo, item, this.$root.$data.topBar[len - 1])
-               else
-                  filePathArr.push(item)
-            }
-            window.fileOps.saveFile(this.userInfo, filePathArr, this.$root.$data.topBar[len - 1])
-
-         })
-
+      shareNum() {
+         this.$prompt('请输入分享码', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          inputPattern: /[1-9]/,
+          inputErrorMessage: '分享码格式不正确'
+        }).then(({ value }) => {
+         console.log(value);
+         window.userOps.inputShareNum(value)
+        }).catch(() => {
+          this.$message({
+            type: 'info',
+            message: '取消输入'
+          });       
+        });
       },
       //鼠标移入显示菜单
       showMenu(tableItem) {
-         const m = document.getElementById(tableItem.rowId)
-         if (m !== null)
-            m.style.visibility = 'visible'
-
-         let len = this.tableData.length
-
-         for (let i = 1; i <= len; i++) {
-            if (('row' + i) !== tableItem.rowId) {
-               let tmpId = document.getElementById('row' + i)
-               tmpId.style.visibility = 'hidden'
-            }
-         }
+         this.showRowMenu(tableItem, this)
       },
       currRow(val) {
-         this.tableData.forEach(item => {
-            if (item == val)
-               this.$refs.multipleTable.toggleRowSelection(val, true)
-            else
-               this.$refs.multipleTable.toggleRowSelection(item, false)
-         })
-      },
-      doubleClickCurrRow(row) {
-         console.log(row);
+         this.checkedTableRow(val, this)
       },
       handleSelectionChange(val) {
          this.multipleSelection = val;
@@ -200,8 +152,7 @@ export default {
 
             const currFolder = this.currTopBarVal[len - 1]
             this.axios.get(`http://${currFolder.ip}:9797/getFolderData/${currFolder.fileId}?${currFolder.userId}`).then(res => {
-               console.log(res.data);
-               if (res.data != 0) {
+               if (res.data.length > 0) {
                   for (const item of res.data) {
                      item.fileId = item.id
                   }
@@ -209,9 +160,8 @@ export default {
                   this.tableData = this.formatTableData(res.data)
                } else
                   this.tableData = []
-            }).catch((err)=>{
+            }).catch((err) => {
                console.log(err.message);
-               console.log('aaaa');
             })
          }
       },
@@ -225,7 +175,6 @@ export default {
                userId: val.userId,
                ip: val.ip
             })
-
          }
       },
       load() {
@@ -246,14 +195,11 @@ export default {
       },
 
       downloadFile(val) {
-         console.log(val);
-
-
          //单个文件下载
          if (val.isDir == 0) {
             this.initTableData.forEach(item => {
                if (val.id == item.id) {
-                  console.log(item);
+      
                   item.downloadedSize = 0    //已下载数据
                   item.downloadType = 'file'   //表明下载方式，单个文件下载，直接下载放入下载目录
                   item.downloadStatus = 'await'
@@ -271,6 +217,10 @@ export default {
                   }
                   let itemWrapper = []
                   itemWrapper.push(item)
+                  this.$message({
+                     message: `${itemWrapper.length}项加入下载`,
+                     type: 'success'
+                  })
                   window.userOps.downloadItem(itemWrapper)
                   this.$root.$data.awaitDownloadQueue.push(item)
                }
@@ -281,9 +231,8 @@ export default {
             const t = JSON.stringify({
                netPath: this.currTopBarVal[this.currTopBarVal.length - 1].key == '0' ? val.netPath + val.filename : val.netPath + '/' + val.filename
             })
-
             this.axios.post(`http://${val.ip}:9797/getFileListInFolder/${val.fileId}?${val.userId}`, t).then(res => {
-
+      
                for (const item of res.data) {
                   item.downloadedSize = 0
                   item.downloadSpeed = 0
@@ -303,6 +252,10 @@ export default {
                   }
                   this.$root.$data.awaitDownloadQueue.push(item)
                }
+               this.$message({
+                  message: `${res.data.length}项加入下载`,
+                  type: 'success'
+               })
                window.userOps.downloadItem(res.data)
             })
          }
@@ -313,33 +266,14 @@ export default {
    computed: {
       topMenu: {
          get: function () {
-            if (this.multipleSelection.length != 0)
-               return true
-            else
-               return false
+            return this.multipleSelection.length != 0
          }
 
       }
 
    },
    mounted() {
-      let mainHeader = document.getElementById('mainHeader')
-      let fileItemAndFileOps = document.getElementById('fileItemAndFileOps')
-      mainHeader.style.width = document.documentElement.clientWidth - 210 + 'px'
-      fileItemAndFileOps.style.width = document.documentElement.clientWidth - 210 + 'px'
-      this.tableHeight = document.documentElement.clientHeight - 185
-      window.addEventListener('resize', () => {
-         mainHeader.style.width = document.documentElement.clientWidth - 210 + 'px'
-         fileItemAndFileOps.style.width = document.documentElement.clientWidth - 210 + 'px'
-         this.tableHeight = document.documentElement.clientHeight - 185
-      })
-      this.$root.$data.topBar.length = 0
-      this.$root.$data.topBar.push({
-         key: '0',
-         name: '文件',
-         netPath: window.userOps.rootNetPath(this.userInfo.username) + '/'
-      })
-
+      this.initComp(this)
       this.getCurrTableData()
       if (window.userOps.getDownloadingObj() != '')
          this.downloadingItems = JSON.parse(window.userOps.getDownloadingObj())
@@ -349,73 +283,5 @@ export default {
 }
 </script>
 <style scoped>
-#mainHeader {
-   border-top-left-radius: 10px;
-   border-top-right-radius: 10px;
-   white-space: nowrap;
-   padding: 10px;
-   border-bottom: rgba(236, 234, 234, 0.6) solid 1px;
-   position: absolute;
-   top: 0px;
-   background-color: white;
 
-}
-
-#mainBody {
-   white-space: nowrap;
-}
-
-.el-checkbox__inner {
-   background-color: #0f62fe;
-   border-color: #0f62fe;
-}
-
-.icon-like {
-   width: 22px;
-   height: 22px;
-}
-
-#filename-parent {
-   position: relative;
-}
-
-.filename-child {
-   font-weight: 400;
-   color: black;
-   font-size: 15px;
-   position: absolute;
-   left: 120%;
-   top: 12%;
-   text-align: left;
-   white-space: nowrap;
-   width: 300px;
-   height: 17px;
-   text-overflow: ellipsis;
-   overflow: hidden;
-   
-}
-
-.item-btn {
-   position: absolute;
-   right: 0%;
-   top: 10%;
-   margin-right: 20px;
-}
-
-#fileItemAndFileOps {
-
-   font-size: large;
-   font-weight: 500;
-   color: #606266;
-   height: 30px;
-   padding: 10px;
-   position: absolute;
-   top: 61px;
-
-   background-color: #fff;
-}
-
-:deep() .el-dialog__body {
-   padding: 10px 20px;
-}
 </style>

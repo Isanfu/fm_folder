@@ -1,95 +1,52 @@
 const dgram = require('dgram');
 const udpDgram = dgram.createSocket('udp4');
-const os = require('os')
 const fs = require('fs')
 const { StringDecoder } = require('string_decoder');
-const FlakeId = require('flake-idgen')
-const intformat = require('biguint-format')
 const EventEmitter = require('events');
-const { rdb } = require('../dbInstance/remoteFileListInstance')
+const netUtils = require('../utils/netUtils')
+const RemoteFiles = require('../entity/RemoteFiles');
+const FileShare = require('../entity/FileShare')
 class ClearIntervalEmitter extends EventEmitter { }
+const logger = require('electron-log')
+const path = require('path')
 
+logger.info(`netFindAndFileBroadcast process start; port: 16642`)
 
-//获取本机ip
-const getIpAddress = () => {
-   /**os.networkInterfaces() 返回一个对象，该对象包含已分配了网络地址的网络接口 */
-   var interfaces = os.networkInterfaces();
-   for (var devName in interfaces) {
-      var iface = interfaces[devName];
-      for (var i = 0; i < iface.length; i++) {
-         var alias = iface[i];
-         if (
-            alias.family === "IPv4" &&
-            alias.address !== "127.0.0.1" &&
-            !alias.internal
-         ) {
-            return alias;
-         }
-      }
-   }
-}
+const realIp = netUtils.getIpAddress().address
 
-const realIp = getIpAddress().address
-const ipArr = realIp.split('.')
-const flakeIdGen = new FlakeId({ worker: parseInt(ipArr[2]) + parseInt(ipArr[3]) });
-
+const remoteFiles = new RemoteFiles()
+const fileShare = new FileShare()
 
 udpDgram.addListener('connect', () => {
    console.log('链接成功');
 })
-
 udpDgram.addListener('listening', () => {
    console.log('监听到数据');
 })
-const msgQueue = []
-//接收分享广播
+//接收分享广播: 清除后再添加
 const receiveShareData = (msgObj) => {
-   msgQueue.push(msgObj)
-   const queueLen = msgQueue.length
-
-   for (let i = 0; i < queueLen; i++) {
-      const queueItem = msgQueue.shift()
-      //需要先删除再插入
-
-      rdb.run('DELETE FROM remote_file_share WHERE userId = ?', queueItem.msg.userInfo.id, err => {
-
-         if (err) throw err
-         //全部删除后再插入
-         if (i == queueLen - 1) {
-            rdb.parallelize(() => {
-               rdb.run('BEGIN TRANSACTION;', () => { });
-               const stmt = rdb.prepare('INSERT OR IGNORE INTO remote_file_share VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)')
-               const tm = queueItem.msg.fileList
-
-               tm.forEach(item => {
-
-                  stmt.run(intformat(flakeIdGen.next(), 'dec'), item.fileId,
-                     item.filename, item.fileSize, item.filetype, queueItem.msg.userInfo.id,
-                     queueItem.msg.userInfo.name, item.isDir, item.absPath, item.netPath, queueItem.rinfo.address,
-                     queueItem.rinfo.port, queueItem.msg.createTime)
-               });
-               stmt.finalize()
-               rdb.run('COMMIT')
-            })
-         }
+   console.log(msgObj.msg.shareNum, msgObj.msg.fileList.length);
+   //对于公开分享的数据，需要先清除再插入
+   if (msgObj.msg.shareNum == 0) {
+      remoteFiles.deleteColOnUserId(msgObj.msg.userInfo.id, () => {
+         if (msgObj.msg.fileList.length > 0)
+            remoteFiles.paraInsertToDb(msgObj)
       })
-
-   }
+   } else
+      remoteFiles.paraInsertToDb(msgObj)
 }
 
-function delAddressData(ip) {
-   rdb.run("DELETE FROM remote_file_share WHERE ip = ?", ip)
-}
 
 var recordCreateTimeJson = {}
 const clearIntervalEmitter = new ClearIntervalEmitter()
 udpDgram.addListener('message', (msg, rinfo) => {
-   if (rinfo.address != getIpAddress().address) {
+   if (rinfo.address != realIp) {
       const decoder = new StringDecoder('utf8');
       const decoderMsgJson = JSON.parse(decoder.write(msg))
       //记住第一次接受消息的时间
       switch (decoderMsgJson.type) {
          case 'broadcast':
+            logger.info(rinfo.address + ', recevice data: '+decoderMsgJson.data)
             //创建时间更大时才会接收数据
             if (typeof recordCreateTimeJson[decoderMsgJson.data.userInfo.id] == 'undefined') {
                recordCreateTimeJson[decoderMsgJson.data.userInfo.id] = decoderMsgJson.data.createTime
@@ -101,15 +58,15 @@ udpDgram.addListener('message', (msg, rinfo) => {
                recordCreateTimeJson[decoderMsgJson.data.userInfo.id] = decoderMsgJson.data.createTime
             }
             break;
-            //接收局域网内用户登录发送的广播，以及返回
+         //接收局域网内用户登录发送的广播，以及返回
          case 'ding': {
-            
-            if (fs.readFileSync('src/file_broadcast/lastFileBroadcastJson.json').toLocaleString() != '') {
+            logger.info('sign in: ' + rinfo.address)
+            if (fs.readFileSync(process.env.NODE_ENV == "development" ?'src/file_broadcast/lastFileBroadcastJson.json': path.join(__dirname,'../file_broadcast/lastFileBroadcastJson.json')).toLocaleString() != '') {
                let i = 0
                let t = setInterval(() => {
                   udpDgram.send(JSON.stringify({
                      type: 'broadcast',
-                     data: JSON.parse(fs.readFileSync('src/file_broadcast/lastFileBroadcastJson.json').toLocaleString())
+                     data: JSON.parse(fs.readFileSync(process.env.NODE_ENV == "development" ?'src/file_broadcast/lastFileBroadcastJson.json': path.join(__dirname,'../file_broadcast/lastFileBroadcastJson.json')).toLocaleString())
                   }),
                      16642,
                      rinfo.address)
@@ -119,20 +76,29 @@ udpDgram.addListener('message', (msg, rinfo) => {
                      i = 0
                   }
                }, 2000)
-
                clearIntervalEmitter.on('clearInterval', () => {
-
                   if (typeof t != 'undefined') {
                      clearInterval(t)
                   }
-
                })
             }
          }
             break;
-         case 'offline':{
-            delAddressData(decoderMsgJson.data)
-         } break
+         case 'offline': {
+            remoteFiles.deleteColOnIp( rinfo.address)
+         } break;
+         case 'shareNum': {
+            console.log(decoderMsgJson.data);
+            const hostNum = decoderMsgJson.data.toString().substring(5)
+            if (hostNum == realIp.split('.')[3]) {
+               fileShare.getDataOfShareNum(decoderMsgJson.data, data => {
+                  console.log(data);
+                  udpDgram.send(JSON.stringify({ type: 'broadcast', data: { userInfo: { id: data[0].userId, name: data[0].username }, fileList: data, createTime: Date.now(), shareNum: data[0].shareNum } }), 16642, rinfo.address)
+               })
+               console.log(hostNum);
+            }
+
+         } break;
       }
    }
 
@@ -148,14 +114,13 @@ clearIntervalEmitter.setMaxListeners(0)
 // 监听父进程消息
 var timer = undefined
 process.on('message', (msg) => {
-
+   logger.info('send data: '+JSON.stringify(msg.data))
    if (typeof timer == 'undefined') {
       clearIntervalEmitter.emit('clearInterval')
       let i = 0
       timer = setInterval(() => {
          udpDgram.send(JSON.stringify(msg), 16642, '255.255.255.255');
          i++
-         console.log(i);
          if (i == 5)
             clearInterval(timer)
       }, 2000)
@@ -166,7 +131,6 @@ process.on('message', (msg) => {
       timer = setInterval(() => {
          udpDgram.send(JSON.stringify(msg), 16642, '255.255.255.255');
          i++
-         console.log(i);
          if (i == 5)
             clearInterval(timer)
       }, 2000)
@@ -177,5 +141,8 @@ process.on('message', (msg) => {
 
 
 process.on('SIGTERM', () => {
+   
+   logger.info('netFindAndFileBroadcast process exit')
    console.log('netFindAndFileBroadcast进程退出');
+   process.exit()
 })

@@ -23,7 +23,7 @@
               @click="folderListBarOps(item.key)">{{ item.name }}</span>
 
             <span v-else style="color: #606266;font-size:medium; cursor:pointer" @click="folderListBarOps(item.key)">{{
-                item.name
+            item.name
             }}</span>
           </el-breadcrumb-item>
         </el-breadcrumb>
@@ -61,7 +61,7 @@
     <div id="mainBody">
 
       <span id="fileItemAndFileOps">
-        <span v-if="multipleSelection.length == 0">
+        <span v-if="multipleSelection.length == 0" style="margin-left: 10px;">
           文件项 <span style="color: #909399;font-size:medium;margin-left: 3px;">{{ tableData.length }}</span>
         </span>
         <span v-else>
@@ -87,7 +87,7 @@
           </el-dropdown>
           <div style="float: right;">
             <el-tooltip content="刷新" placement="bottom" :open-delay="400">
-              <img :src="require(`@/assets/icons/refresh.svg`)"
+              <img :src="require(`@/assets/icons/refresh.svg`)" alt="刷新"
                 style="margin:0px 30px 0 10px;padding-top: 3px;height: 17px;width: 17px;" @click="getCurrTableData" />
 
             </el-tooltip>
@@ -114,7 +114,7 @@
                   <img class="icon-like" :src="require(`@/assets/icons/${scope.row.filetype}.svg`)" alt="" srcset="">
                   <div class=" item-color filename-child">
                     <span @click="getChildTableData(scope.row)" style="cursor: pointer;">&nbsp;&nbsp;{{
-                        scope.row.filename
+                    scope.row.filename
                     }}</span>
                   </div>
                 </div>
@@ -122,6 +122,11 @@
               </el-button>
               <!-- 表格行菜单显示-->
               <div :id="scope.row.rowId" class="item-btn">
+                <el-tooltip content="本地打开" placement="bottom" :open-delay=500>
+                  <el-button type="text" size="medium" style="float: left;" @click="openInFinder(scope.row)">
+                    <em class="el-icon-search"></em>
+                  </el-button>
+                </el-tooltip>
                 <el-tooltip content="移动" placement="bottom" :open-delay="400">
                   <el-button type="text" size="medium" style="float: left;" @click="moveFileObj(scope.row)">
                     <em class="el-icon-folder-opened"></em>
@@ -159,8 +164,9 @@
     <el-dialog title="提示" :visible.sync="namesakeWarmingDialog" width="40%">
       <div>
         <h3>检测到存在{{ recordNamesakeFileObj.length }}个同名文件:</h3>
-
-        <li v-for="item of recordNamesakeFileObj" :key="item.name" style="color: blue">{{ item.name }}</li>
+        <ul>
+          <li v-for="item of recordNamesakeFileObj" :key="item.name" style="color: blue">{{ item.name }}</li>
+        </ul>
       </div>
       <span slot="footer" class="dialog-footer">
         <el-button @click="namesakeWarmingDialog = false" size="small">取消</el-button>
@@ -173,15 +179,10 @@
         <h4>
           分享方式：
         </h4>
-        <el-card shadow="never">
-          <div @click="fileShareMethod = true" style="cursor: pointer;">公开分享
-            <div v-show="fileShareMethod == true" style="float: right" class="el-icon-check"></div>
-          </div>
-          <hr>
-          <div @click="fileShareMethod = false" style="cursor: pointer;">提取码分享
-            <div v-show="fileShareMethod == false" style="float: right" class="el-icon-check"></div>
-          </div>
-        </el-card>
+        <el-select style="width: 100%" v-model="fileShareMethod" filterable placeholder="请选择">
+          <el-option v-for="item in fileShareOptions" :key="item.value" :label="item.label" :value="item.value">
+          </el-option>
+        </el-select>
 
       </div>
       <span slot="footer" class="dialog-footer">
@@ -210,7 +211,7 @@ export default {
       currMethodOfSort: 1,
       newFolderDialogVisible: false,
       newFolderName: '',
-      userInfo: this.$cookies.get('userInfo'),
+      userInfo: this.$root.$data.userInfo,
       folderListBar: [],
       isTopBar: true,
       singleTmpFileObjArr: [],  //临时记录
@@ -219,7 +220,17 @@ export default {
       recordNamesakeFileObjOnTableData: [],
       tableHeight: undefined,
       shareFileDialogVisible: false,
-      fileShareMethod: true   //默认公开分享
+      fileShareOptions: [
+        {
+          value: 0,
+          label: '公开分享'
+        },
+        {
+          value: 1,
+          label: '分享码分享'
+        }
+      ],
+      fileShareMethod: ''
     }
   },
   watch: {
@@ -233,11 +244,11 @@ export default {
         this.moveMenuData = data
       }, this.folderListBar[len - 1].key)
     },
-    searchKey: function (){
-      if(this.searchKey != '')
-      window.userOps.getSearchData(this.userInfo,this.searchKey,data=>{
-        this.tableData = this.formatTableData(data)
-      })
+    searchKey: function () {
+      if (this.searchKey != '')
+        window.userOps.getSearchData(this.userInfo, this.searchKey, data => {
+          this.tableData = this.formatTableData(data)
+        })
     }
   },
   methods: {
@@ -245,75 +256,20 @@ export default {
     load() { },
     //打开主进程文件对话框
     saveFilesObjOnMainProcess() {
-      window.fileOps.saveFilesObjOnMainProcess().then(res => {
-        console.log(res);
-
-        let namesakeFileObjArr = []
-        res.forEach(itemA => {
-          this.tableData.forEach(itemB => {
-            if (window.fileOps.getFileObjName(itemA) == itemB.filename) {
-              this.recordNamesakeFileObjOnTableData.push(itemB)
-              namesakeFileObjArr.push({
-                name: window.fileOps.getFileObjName(itemA),
-                path: itemA
-              })
-            }
-          })
-        });
-
-        if (namesakeFileObjArr.length > 0) {
-          this.namesakeWarmingDialog = true
-          this.recordNamesakeFileObj = namesakeFileObjArr
-        }
-
-        //不同名文件，可以直接插入
-        const unNamesake = res.filter(itemA => {
-          return namesakeFileObjArr.every(itemB => {
-            return itemB.name != window.fileOps.getFileObjName(itemA)
-          })
-        })
-
-
-        const filePathArr = []
-        const len = this.$root.$data.topBar.length
-        //插入文件
-        for (const item of unNamesake) {
-          if (window.fileOps.isDir(item))
-            window.fileOps.saveDir(this.userInfo, item, this.$root.$data.topBar[len - 1])
-          else
-            filePathArr.push(item)
-        }
-        window.fileOps.saveFile(this.userInfo, filePathArr, this.$root.$data.topBar[len - 1])
-
-      })
-
+      this.saveFileInDialogWay(this)
     },
     //鼠标移入显示菜单
     showMenu(tableItem) {
-      const m = document.getElementById(tableItem.rowId)
-      if (m !== null)
-        m.style.visibility = 'visible'
-
-      let len = this.tableData.length
-
-      for (let i = 1; i <= len; i++) {
-        if (('row' + i) !== tableItem.rowId) {
-          let tmpId = document.getElementById('row' + i)
-          tmpId.style.visibility = 'hidden'
-        }
-      }
+      this.showRowMenu(tableItem, this)
     },
     currRow(val) {
-      this.tableData.forEach(item => {
-        if (item == val)
-          this.$refs.multipleTable.toggleRowSelection(val, true)
-        else
-          this.$refs.multipleTable.toggleRowSelection(item, false)
-      })
+      this.checkedTableRow(val, this)
     },
     doubleClickCurrRow(row) {
-      console.log(row);
-      this.getChildTableData(row)
+      row.isDir == 1 ? this.getChildTableData(row) : window.userOps.openFile(row)
+    },
+    openInFinder(val) {
+      window.userOps.openInFinder(val)
     },
     handleSelectionChange(val) {
       this.multipleSelection = val;
@@ -322,7 +278,8 @@ export default {
     getChildTableData(fileItem) {
 
       const len = this.$root.$data.topBar.length
-      if (fileItem.isDir == 1) {
+
+      if (fileItem.isDir == 1 && fileItem.id != this.$root.$data.topBar[len - 1].key) {
         this.$root.$data.topBar.push({
           key: fileItem.id,
           name: fileItem.filename,
@@ -353,7 +310,6 @@ export default {
       }
     },
     getCurrTableData() {
-      // const user = this.$cookies.get('userInfo')
       const len = this.$root.$data.topBar.length
       window.userOps.getHomeTableData(this.userInfo, data => {
 
@@ -397,62 +353,10 @@ export default {
 
     },
     delFileObjArr() {
-      this.$confirm('是否删除？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        window.userOps.delFileObjArr(this.multipleSelection, this.userInfo, data => {
-          console.log(data);
-        })
-      }).catch(() => {
-        console.log('取消');
-      })
+      this.delFileArr(this)
     },
     updateFileObj(command) {
-      const tmpFileObjArr = []
-      switch (command.name) {
-        case 'delFile':
-          tmpFileObjArr.push(command.fileObj)
-          this.$confirm('是否删除？', '提示', {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning'
-          }).then(() => {
-            window.userOps.delFileObjArr(tmpFileObjArr, this.userInfo, data => {
-              console.log(data);
-            })
-          }).catch(() => {
-            console.log('取消');
-          }); break;
-        case 'rename':
-          this.$prompt('输入新文件名', '提示', {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消'
-          }).then(newFileName => {
-            const len = this.$root.$data.topBar.length
-
-            for (const item of this.tableData) {
-              if (item.isDir == command.fileObj.isDir && item.filename == newFileName.value) {
-                if (item.filename == newFileName.value) {
-                  this.$message.error('文件已存在！');
-                  return
-                }
-              }
-            }
-            let name = ''
-            if(command.fileObj.isDir==1)
-              name = newFileName.value
-            else
-              name = newFileName.value + window.fileOps.getExtname(command.fileObj.filename)
-            console.log('333');
-            window.userOps.updateFilename(command.fileObj, this.userInfo.id, name, this.currTopBarVal[len - 1].netPath, data => {
-              console.log(data);
-            })
-          }).catch(() => {
-            console.log('取消');
-          }); break;
-      }
+      this.updateFile(command, this)
     },
     getHomeFolderList() {
       this.moveMenuDialog = true
@@ -472,7 +376,6 @@ export default {
     },
     folderListBarOps(itemId) {
       const idx = this.folderListBar.map(o => o.key).indexOf(itemId)
-      console.log(idx);
       const num = this.folderListBar.length - 1 - idx
       for (let i = 0; i < num; i++)
         this.folderListBar.pop()
@@ -484,7 +387,6 @@ export default {
     moveFileObjArr() {
       this.moveMenuDialog = false
       const tmpFolderList = JSON.parse(JSON.stringify(this.folderListBar))
-      console.log(this.moveMenuData);  //移动dialog的topBar
       //移动时，需要检测当前文件夹目录下有无同名文件，即先查询。
       window.userOps.getHomeTableData(this.userInfo, data => {
         const namesakeArr = []
@@ -561,10 +463,10 @@ export default {
       this.namesakeWarmingDialog = false
       //删除表格里面的同名文件
       window.userOps.delFileObjArr(this.recordNamesakeFileObjOnTableData, this.userInfo, data => {
-        console.log(data);
         //插入覆盖
         const filePathArr = []
         const len = this.$root.$data.topBar.length
+        console.log(data);
         for (const item of this.recordNamesakeFileObj) {
           if (window.fileOps.isDir(item.path))
             window.fileOps.saveDir(this.userInfo, item.path, this.$root.$data.topBar[len - 1])
@@ -578,19 +480,19 @@ export default {
     },
     //文件分享操作
     shareFile(fileList, method = 0) {
-      window.userOps.fileShare(fileList, this.userInfo, data => {
-        console.log(data);
+      if(method != 3){
+        window.userOps.fileShare(fileList, this.userInfo, data => {
+        this.$message({
+          message: `${data.len}项分享成功`,
+          type: 'success'
+        })
       }, method)
+      }
     },
     //多选分享
     shareFileObjArr() {
       this.shareFileDialogVisible = false
-      if (this.fileShareMethod)
-        this.shareFile(this.multipleSelection)
-      else
-        this.shareFile(this.multipleSelection, 1)
-
-
+      this.shareFile(this.multipleSelection, this.fileShareMethod)
     },
     //单个分享
     shareSingleFileObj(fileObj) {
@@ -601,10 +503,7 @@ export default {
   computed: {
     topMenu: {
       get: function () {
-        if (this.multipleSelection.length != 0)
-          return true
-        else
-          return false
+        return this.multipleSelection.length != 0
       }
 
     }
@@ -612,26 +511,8 @@ export default {
   },
   mounted() {
 
-    let mainHeader = document.getElementById('mainHeader')
+    this.initComp(this)
     let mainContainer = document.getElementById('mainContainer')
-    let fileItemAndFileOps = document.getElementById('fileItemAndFileOps')
-    mainHeader.style.width = document.documentElement.clientWidth - 210 + 'px'
-    fileItemAndFileOps.style.width = document.documentElement.clientWidth - 210 + 'px'
-    this.tableHeight = document.documentElement.clientHeight - 185
-    window.addEventListener('resize', () => {
-      mainHeader.style.width = document.documentElement.clientWidth - 210 + 'px'
-      fileItemAndFileOps.style.width = document.documentElement.clientWidth - 210 + 'px'
-      this.tableHeight = document.documentElement.clientHeight - 185
-    })
-    this.$root.$data.topBar.length = 0
-
-    this.$root.$data.topBar.push({
-      key: '0',
-      name: '文件',
-      netPath: window.userOps.rootNetPath(this.userInfo.username) + '/'
-    })
-
-
     //文件拖拽
     mainContainer.addEventListener('drop', e => {
       e.stopPropagation(); // 防止浏览器打开新的标签页（firefox）
@@ -649,21 +530,17 @@ export default {
           }
         }
       }
-
       //不同名文件，可以直接插入
-      const unNamesake = fileList.filter(itemA => {
-        return namesakeFileObjArr.every(itemB => {
-          return itemB.name != itemA.name
-        })
-      })
-
 
       if (namesakeFileObjArr.length > 0) {
         this.recordNamesakeFileObj = namesakeFileObjArr
         this.namesakeWarmingDialog = true
       }
-
-
+      const unNamesake = fileList.filter(itemA => {
+        return namesakeFileObjArr.every(itemB => {
+          return itemB.name != itemA.name
+        })
+      })
       const filePathArr = []
       const len = this.$root.$data.topBar.length
       //插入不同名文件
@@ -687,69 +564,5 @@ export default {
 }
 </script>
 <style scoped>
-#mainHeader {
-  border-top-left-radius: 10px;
-  border-top-right-radius: 10px;
-  white-space: nowrap;
-  padding: 10px;
-  border-bottom: rgba(236, 234, 234, 0.6) solid 1px;
-  position: absolute;
-  top: 0px;
-  background-color: white;
-}
 
-#mainBody {
-  white-space: nowrap;
-}
-
-.el-checkbox__inner {
-  background-color: #0f62fe;
-  border-color: #0f62fe;
-}
-
-.icon-like {
-  width: 22px;
-  height: 22px;
-}
-
-#filename-parent {
-  position: relative;
-}
-
-.filename-child {
-  font-weight: 400;
-  color: black;
-  font-size: 15px;
-  text-align: left;
-  white-space: nowrap;
-  width: 300px;
-  height: 17px;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  position: absolute;
-  top: 12%;
-  left: 120%;
-}
-
-.item-btn {
-  position: absolute;
-  right: 0%;
-  top: 10%;
-  margin-right: 20px;
-}
-
-#fileItemAndFileOps {
-  font-size: large;
-  font-weight: 500;
-  color: #606266;
-  height: 30px;
-  padding: 10px;
-  position: absolute;
-  top: 61px;
-  background-color: #fff;
-}
-
-:deep() .el-dialog__body {
-  padding: 10px 20px;
-}
 </style>

@@ -83,7 +83,7 @@ export default {
                   password: window.userOps.md5ForPassword(registerFormData.password)
                }
                window.userOps.registerUser(user, data => {
-                  this.$cookies.set('userInfo', data,{ expires: 7})
+                  this.$root.$data.userInfo = data
                   window.userOps.notifyUserOnlineToLan()
                   this.$router.push('/homeView')
                })
@@ -94,13 +94,10 @@ export default {
       },
       //提交登录表单
       submitSignInForm(registerFormData) {
-         const user = this.$cookies.get('userInfo')
-            console.log(user);
          const md5Password = window.userOps.md5ForPassword(registerFormData.password)
          window.userOps.signInUser(registerFormData.username,data=>{
-            
             if(data != undefined && data.password === md5Password){
-               this.$cookies.set('userInfo',data,{ expires: 7})
+               this.$root.$data.userInfo = data
                window.userOps.notifyUserOnlineToLan()
                this.$router.push('/homeView')
             }

@@ -1,22 +1,13 @@
 const os = require("os");
 
-
-
-
 //获取本机ip
 const getIpAddress = () => {
-  var interfaces = os.networkInterfaces();
-  for (var devName in interfaces) {
-    var iface = interfaces[devName];
-    for (var i = 0; i < iface.length; i++) {
-      var alias = iface[i];
-      if (
-        alias.family === "IPv4" &&
-        alias.address !== "127.0.0.1" &&
-        !alias.internal
-      ) {
-        return alias;
-      }
+  const interfaces = os.networkInterfaces();
+  for (const devName in interfaces) {
+    const iface = interfaces[devName];
+    for (const item of iface) {
+        if(item.family == 'IPv4' && item.address != '127.0.0.1' && !item.alias)
+          return item
     }
   }
 }

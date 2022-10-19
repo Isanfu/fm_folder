@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const path = require('path')
 const netUtils = require('./netUtils')
 const intformat = require('biguint-format')
-const FlakeId = require('flake-idgen')
+const FlakeId = require('flake-idgen');
 
 
 //获取文件的md5值
@@ -36,6 +36,8 @@ const fileType = (extname) => {
    const word = ['doc', 'docx']
    const excel = ['xls', 'xlsx']
    const ppt = ['ppt', 'pptx']
+
+
 
    for (const item of image) {
       if (item == extname)
@@ -239,24 +241,18 @@ const getDirObj = (p, callback) => {
 
 }
 
-// const t1 = Date.now()
-// getDirObj('/Users/sanfu/Downloads/test',data=>{
-//    console.log(data.length);
-//    console.log(Date.now()-t1);
-// })
-
 //记录正在下载的任务
 const recordDownloadingFile = (val) => {
-   fs.writeFileSync('src/file_broadcast/recordAwaitDownloadQueue.json', JSON.stringify(val))
+   fs.writeFileSync(process.env.NODE_ENV == "development" ?'src/file_broadcast/recordAwaitDownloadQueue.json':path.join(__dirname,'../file_broadcast/recordAwaitDownloadQueue.json'), JSON.stringify(val))
 }
 
 //读取正在下载的任务
 const getDownloadingObj = () => {
-   return fs.readFileSync('src/file_broadcast/recordAwaitDownloadQueue.json').toLocaleString()
+   return fs.readFileSync(process.env.NODE_ENV == "development" ?'src/file_broadcast/recordAwaitDownloadQueue.json':path.join(__dirname,'../file_broadcast/recordAwaitDownloadQueue.json') ).toLocaleString()
 }
 //读取下载已完成的任务
 const getDownloadedQueue = () => {
-   return fs.readFileSync('src/file_broadcast/recordDownloadedFile.json').toLocaleString()
+   return fs.readFileSync(process.env.NODE_ENV == "development" ?'src/file_broadcast/recordDownloadedFile.json':path.join(__dirname,'../file_broadcast/recordDownloadedFile.json') ).toLocaleString()
 }
 
 
@@ -272,66 +268,3 @@ module.exports = {
    getDownloadedQueue,
    isDir
 }
-
-
-
-// const insertDB = (filename,filePath,fileSize) => {
-
-
-//          //文件路径
-//          const fileUri = filePath.slice(0, filePath.length - filename.length)
-//          //文件扩展名
-//          const fileExtname = path.extname(filePath)
-
-//          //文件md5值
-//          const fileStream = fs.createReadStream(filePath)
-
-//          const fileMd5 = crypto.createHash('md5')
-
-//          fileStream.on('data', (data) => {
-//             fileMd5.update(data)
-//          })
-
-
-//          fileStream.on('end', () => {
-//             let md5 = fileMd5.digest('hex')
-//             const createTime = moment(Date.now()).format('YYYY-MM-DD HH:mm:ss')
-//             const modifyTime = createTime
-//             const ip = netUtils.getIpAddress()
-
-//             console.log(md5,filename,fileExtname,fileUri,createTime,modifyTime,'local',ip,fileSize);
-
-//          })   
-
-// }
-
-// const filepath = '/Users/sanfu/Downloads/demo'
-// const arr = []
-
-
-// //递归遍历目录
-// const getAllFileFromDir = (p) => {
-//    const tp = p
-//    //读取目录下所有文件
-//    const files = fs.readdirSync(tp, { encoding: 'utf8', withFileTypes: true })
-
-//    files.forEach(item => {
-//       if (item.name == '.DS_Store')
-//          return
-
-//       if (item.isDirectory()) {
-//          p = tp + '/' + item.name
-//          console.log(p);
-//          getAllFileFromDir(p)
-//       } else {
-
-//          let arrItem = {
-//             name: item.name,
-//             path: p + '/',
-//             type: 'file'
-//          }
-//          arr.push(arrItem)
-
-//       }
-//    })
-// }

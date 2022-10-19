@@ -7,7 +7,7 @@
         <div id="asideIcon">
           <img :src="require('@/assets/fm_folder.svg')" alt="" srcset="">
         </div>
-        <div style="float:left;margin-top: 50px;font-weight:500;font-style: italic; font-size:15px;">FM文件夹</div>
+        <div style="float:left;margin-top: 30px;font-weight:500;font-style: italic; font-size:15px;">FM文件夹</div>
         <div id="asideBtnGroup" style="margin-top: 10px">
           <span type="text" class="asideGroupName">文件</span>
           <div>
@@ -74,21 +74,16 @@
           @click="topBarOps(item.key)">
           <em v-if="item.key != '0'" class="el-icon-arrow-right" /> {{ item.name }}
         </span>
-
-
       </div>
-
       <div id="searchInput">
-
         <el-input v-model="searchKey" placeholder="搜索全部文件" @keyup.enter.native="searchData"
           prefix-icon="el-icon-search">
         </el-input>
       </div>
 
-      <div id="notify">
+      <!-- <div id="notify">
         <el-button type="text" style="color: #0f62fe">消息</el-button>
-      </div>
-
+      </div> -->
       <div id="mobilePage">
         <el-popover placement="bottom" trigger="click">
           <div id="qrcode"></div>
@@ -102,7 +97,7 @@
             :src="defaultAvatarImg == '' ? require(`@/assets/default_avatar.png`) : require(`@/assets/${defaultAvatarImg}`)">
           </el-avatar>
           <el-dropdown-menu slot="dropdown">
-            <el-dropdown-item style="font-weight: bolder;" disabled>当前用户：{{ username }} </el-dropdown-item>
+            <el-dropdown-item style="font-weight: bolder;" disabled>当前用户：{{ userInfo.username }} </el-dropdown-item>
             <el-dropdown-item command="username" divided>修改用户名</el-dropdown-item>
 
             <el-dropdown-item command="password">修改密码</el-dropdown-item>
@@ -158,6 +153,7 @@ export default {
       passwordDialogVisible: false,
       oldPassword: '',
       newPassword: '',
+      userInfo: this.$root.$data.userInfo,
       searchKey: '',
       serarchMsg: '',
       downloadedLen: 0,
@@ -165,9 +161,6 @@ export default {
     };
   },
   computed: {
-    username() {
-      return this.$cookies.get('userInfo').username
-    },
     items() {
       return this.$root.$data.topBar
     },
@@ -198,13 +191,13 @@ export default {
       topBar.style.width = (document.documentElement.clientWidth - 190) * 0.4 + 'px'
     })
 
-    const user = this.$cookies.get('userInfo')
+    const user = this.userInfo
     if (user.avatar != 'default_avatar.png')
       this.defaultAvatarImg = user.avatar
 
     const qrcodeConf = new AraleQrcode({
       "render": 'svg',
-      "text": `http://${window.userOps.getLocalIp()}:9797/mobileDeviceRequest/0?${this.$cookies.get('userInfo').id}`,
+      "text": `http://${window.userOps.getLocalIp()}:9797/mobileDeviceRequest/0?${this.userInfo.id}`,
       "size": 120
     })
     var share_tools = document.querySelector('#qrcode')
@@ -235,14 +228,15 @@ export default {
         this.downloadedLen = 0
     },
     updatePassword() {
-      const user = this.$cookies.get('userInfo')
+      const user = this.userInfo
       if (window.userOps.md5ForPassword(this.oldPassword) != user.password) {
         this.$message.error('密码错误！');
       } else {
         window.userOps.updateUser('password', user.id, window.userOps.md5ForPassword(this.newPassword), data => {
           console.log(data);
           user['password'] = window.userOps.md5ForPassword(this.newPassword)
-          this.$cookies.set('userInfo', user, { expires: 7 })
+
+          this.userInfo = user
         })
       }
     },
@@ -262,7 +256,7 @@ export default {
 
     },
     updateUser(command) {
-      const user = this.$cookies.get('userInfo')
+      const user =this.userInfo
       let prompt = ''
       switch (command) {
         case 'username': prompt = '输入新用户名'; break;
@@ -276,7 +270,8 @@ export default {
       }
 
       if (command == 'userExit') {
-        this.$cookies.set('userInfo', '')
+
+        this.userInfo = ''
         this.$router.push('/')
         return
       }
@@ -290,7 +285,7 @@ export default {
         window.userOps.updateUser(command, user.id, newVal.value, data => {
           console.log(data);
           user[command] = newVal.value
-          this.$cookies.set('userInfo', user, { expires: 7 })
+          this.userInfo = user
         })
       }).catch(() => {
         console.log('取消');
@@ -312,24 +307,23 @@ export default {
 /* #asideTop {} */
 
 #asideIcon {
-  margin-top: 20px;
   width: 60px;
   height: 60px;
   float: left
 }
 
 #header {
-
   width: 100%;
   height: 70px;
   background-color: #f4f4f7;
   position: absolute;
   left: 190px;
-  min-width: 0
+  min-width: 0;
+
 }
 
 #searchInput,
-#notify,
+/* #notify, */
 #mobilePage,
 #avatar {
   float: right;

@@ -5,7 +5,9 @@ const userUtils = require('@/utils/userUtils')
 const netUtils = require('@/utils/netUtils')
 const LocalFiles = require('./entity/LocalFIles')
 const User = require('./entity/User')
+const { downloadFileUrl } = require('./config/userConfig')
 const FileShare = require('./entity/FileShare')
+const path = require('path')
 
 const localFiles = new LocalFiles()
 const user = new User()
@@ -18,10 +20,7 @@ contextBridge.exposeInMainWorld('fileOps', {
       return fileUtils.getExtname(filename)
    },
    saveDir: (user, dirAbsPath, curUrl) => {
-      // fileUtils.getDirObj(dirAbsPath, (dirObj) => {
-      //    localFiles.insertToLocalFiles(user, dirObj, curUrl)
-      // })
-      ipcRenderer.send('readDirAndinsertToDB',{user: user,dirAbsPath: dirAbsPath,curUrl: curUrl})
+      ipcRenderer.send('readDirAndinsertToDB', { user: user, dirAbsPath: dirAbsPath, curUrl: curUrl })
    },
    saveFile: (user, fileArrAbsPath, curUrl) => {
       fileUtils.getFileObj(fileArrAbsPath, (fileObjArr) => {
@@ -36,7 +35,7 @@ contextBridge.exposeInMainWorld('userOps', {
    rootNetPath: (username) => {
       return netUtils.baseUrl(username)
    },
-   getLocalIp: ()=>{
+   getLocalIp: () => {
       return netUtils.getIpAddress().address
    },
    registerUser: (userInfo, callback) => {
@@ -131,6 +130,9 @@ contextBridge.exposeInMainWorld('userOps', {
          callback(data)
       })
    },
+   inputShareNum: (shareNum) => {
+      ipcRenderer.send('shareMethodOfNum', parseInt(shareNum))
+   },
    delFileObjArrOnFileShareTable: (user, fileObjArr, callback) => {
       userUtils.delFileObjArrOnFileShareTable(user, fileObjArr, data => {
          if (data == fileObjArr.length) {
@@ -176,5 +178,12 @@ contextBridge.exposeInMainWorld('userOps', {
    getFstat: (path) => {
       return fileUtils.getFstat(path)
    },
-   getDownloadedQueue: () => fileUtils.getDownloadedQueue()
+   getDownloadedQueue: () => fileUtils.getDownloadedQueue(),
+   openInFinder: (val) => {
+      ipcRenderer.send('openInFinder', val.parentId == '0' && val.isDir == 1 ? val.absPath : val.absPath + path.sep + val.filename)
+   },
+   openFile: (val) => {
+      ipcRenderer.send('openFile', val.absPath + path.sep + val.filename)
+   },
+   getDownloadFileUrl: ()=> downloadFileUrl
 })
